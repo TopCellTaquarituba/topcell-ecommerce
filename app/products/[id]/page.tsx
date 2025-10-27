@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { getProductById, Review } from '@/lib/products'
 import { useCart } from '@/context/CartContext'
