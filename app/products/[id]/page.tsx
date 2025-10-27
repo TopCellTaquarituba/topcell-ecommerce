@@ -120,7 +120,7 @@ const handleAddToCart = () => {
                   <FiStar
                     key={i}
                     className={`w-5 h-5 ${
-                      i < Math.floor(averageRating)
+                      i < Math.floor(averageRating ?? 0)
                         ? 'text-yellow-400 fill-current'
                         : 'text-gray-300 dark:text-gray-600'
                     }`}

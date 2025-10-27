@@ -6,13 +6,13 @@ export interface Product {
   image: string
   category: string
   brand: string
-  rating?: number
+  rating: number
   description: string
   specifications: { [key: string]: string }
   images: string[]
   inStock: boolean
   reviews?: Review[]
-  createdAt: string | Date
+  createdAt?: string | Date
 }
 
 export interface Review {
@@ -30,7 +30,6 @@ export interface Review {
 
 export function getProducts(): Product[] {
   return [
-    // Smartphones
     {
       id: '1',
       name: 'iPhone 15 Pro Max',

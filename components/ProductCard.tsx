@@ -11,7 +11,7 @@ interface Product {
   price: number
   image: string
   category: string
-  rating: number
+  rating?: number
 }
 
 interface ProductCardProps {
@@ -54,7 +54,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                 <svg
                   key={i}
                   className={`w-4 h-4 ${
-                    i < Math.floor(product.rating)
+                    i < Math.floor(product.rating ?? 0)
                       ? 'text-yellow-400'
                       : 'text-gray-300 dark:text-gray-600'
                   }`}
