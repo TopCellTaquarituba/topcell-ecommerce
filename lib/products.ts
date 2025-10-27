@@ -6,12 +6,13 @@ export interface Product {
   image: string
   category: string
   brand: string
-  rating: number
+  rating?: number
   description: string
   specifications: { [key: string]: string }
   images: string[]
   inStock: boolean
   reviews?: Review[]
+  createdAt: string | Date
 }
 
 export interface Review {
