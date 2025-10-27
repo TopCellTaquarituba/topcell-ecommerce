@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300;
+  }
+}
+
+@layer components {
+  .container-custom {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Smooth scroll */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Card animations */
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+  }
+
+  /* Product card specific styles */
+  .product-card {
+    @apply flex flex-col h-full;
+  }
+
+  .product-card .card-content {
+    @apply flex-1 flex flex-col;
+  }
+
+  .product-card .card-footer {
+    @apply mt-auto;
+  }
+
+  /* Products grid */
+  .products-grid {
+    @apply grid gap-6;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+
+  .products-grid .product-card {
+    @apply h-full;
+  }
+
+  /* Button animations */
+  .btn-animate {
+    @apply transition-all duration-300 hover:scale-105 active:scale-95;
+  }
+
+  /* Animated bar chart */
+  @keyframes drawLine {
+    from {
+      stroke-dasharray: 1000;
+      stroke-dashoffset: 1000;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  .animate-line {
+    animation: drawLine 2s ease-out forwards;
+  }
+
+  /* Pulse animation for metrics */
+  @keyframes pulseGlow {
+    0%, 100% {
+      box-shadow: 0 0 5px rgba(14, 165, 233, 0.3);
+    }
+    50% {
+      box-shadow: 0 0 20px rgba(14, 165, 233, 0.6);
+    }
+  }
+
+  .pulse-glow {
+    animation: pulseGlow 2s ease-in-out infinite;
+  }
+
+  /* Hide scrollbar */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
