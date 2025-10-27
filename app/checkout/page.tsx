@@ -1,13 +1,12 @@
 'use client'
 
-import {  useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useCart } from '@/context/CartContext'
 import { useRouter } from 'next/navigation'
 import CEPInput, { CEPData } from '@/components/CEPInput'
 import { FiCheck, FiCreditCard, FiTruck, FiLock, FiMapPin } from 'react-icons/fi'
 
 export default function CheckoutPage() {
-  
   const { items, getTotalPrice, clearCart } = useCart()
   const router = useRouter()
   const [step, setStep] = useState<'shipping' | 'payment' | 'review'>('shipping')
@@ -28,24 +27,6 @@ export default function CheckoutPage() {
   if (items.length === 0) {
     router.push('/cart')
     return null
-  }
-  useEffect(() => {
-    if (items.length === 0) {
-      router.push('/cart')
-    }
-  }, [items, router])
-
-  if (items.length === 0) {
-    return (
-      <div className='conteiner-custom py-20 text-center'>
-        <h1 className='text-2xl font-bold mb-4'>
-          Carrinho vazio
-        </h1>
-        <p className='text-gray-500 dark:text-gray-400'>
-          Redirecionando para o carrinho...
-        </p>
-      </div>
-    )
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {

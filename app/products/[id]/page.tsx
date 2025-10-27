@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { getProductById, Review } from '@/lib/products'
 import { useCart } from '@/context/CartContext'
@@ -18,24 +18,25 @@ export default function ProductDetailPage() {
 
   const product = getProductById(params.id as string)
 
-  useEffect(() => {
-  if (product && product.reviews) {
-    setReviews(product.reviews)
-  }
-}, [product])
-
   if (!product) {
     return (
-      <div className='container-custom py-20 text-center'>
-        <h1 className='text-3xl font-bold mb-4'>Produto não encontrado.</h1>
-        <link href='/products' className='text-primary-600 hover:underline'>
-          Voltar para a lista de produtos.
-        </link>
+      <div className="container-custom py-20 text-center">
+        <h1 className="text-3xl font-bold mb-4">Produto não encontrado</h1>
+        <Link href="/products" className="text-primary-600 hover:underline">
+          Voltar para a lista de produtos
+        </Link>
       </div>
     )
   }
 
-const handleAddToCart = () => {
+  // Initialize reviews from product data
+  useEffect(() => {
+    if (product.reviews) {
+      setReviews(product.reviews)
+    }
+  }, [product.reviews])
+
+  const handleAddToCart = () => {
     for (let i = 0; i < quantity; i++) {
       addToCart({
         id: product.id,
@@ -120,7 +121,7 @@ const handleAddToCart = () => {
                   <FiStar
                     key={i}
                     className={`w-5 h-5 ${
-                      i < Math.floor(averageRating ?? 0)
+                      i < Math.floor(averageRating)
                         ? 'text-yellow-400 fill-current'
                         : 'text-gray-300 dark:text-gray-600'
                     }`}

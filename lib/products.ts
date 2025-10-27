@@ -12,7 +12,6 @@ export interface Product {
   images: string[]
   inStock: boolean
   reviews?: Review[]
-  createdAt?: string | Date
 }
 
 export interface Review {
@@ -30,6 +29,7 @@ export interface Review {
 
 export function getProducts(): Product[] {
   return [
+    // Smartphones
     {
       id: '1',
       name: 'iPhone 15 Pro Max',
