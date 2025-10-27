@@ -7,13 +7,6 @@ import CEPInput, { CEPData } from '@/components/CEPInput'
 import { FiCheck, FiCreditCard, FiTruck, FiLock, FiMapPin } from 'react-icons/fi'
 
 export default function CheckoutPage() {
-  const [path, setPath] = useState("")
-  useEffect(() => {
-    setPath(window.location.pathname)
-  }, [])
-  return(
-    <div>Você está em: {path}</div>
-  )
   const { items, getTotalPrice, clearCart } = useCart()
   const router = useRouter()
   const [step, setStep] = useState<'shipping' | 'payment' | 'review'>('shipping')
