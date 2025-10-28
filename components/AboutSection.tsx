@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { FiUsers, FiAward, FiTruck, FiShield, FiTrendingUp, FiHeart } from 'react-icons/fi'
+import { useContent } from '@/context/ContentContext'
 
 export default function AboutSection() {
   const [isVisible, setIsVisible] = useState(false)
+  const { content } = useContent()
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -84,7 +86,7 @@ export default function AboutSection() {
         {/* Header */}
         <div className="text-center mb-16 animate-fade-in">
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
-            Sobre a <span className="text-primary-600 dark:text-primary-400">TopCell</span>
+            {content.about.title}
           </h2>
           <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto leading-relaxed">
             Há mais de 15 anos, somos referência em tecnologia no Brasil, oferecendo os melhores produtos eletrônicos com qualidade, confiança e atendimento excepcional.

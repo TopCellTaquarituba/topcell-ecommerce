@@ -11,7 +11,12 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
 
   // Don't show Header/Footer on admin routes
   if (isAdminRoute) {
-    return <div className="min-h-screen">{children}</div>
+    return (
+      <>
+        <div className="min-h-screen">{children}</div>
+        <WhatsAppButton />
+      </>
+    )
   }
 
   return (

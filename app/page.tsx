@@ -2,7 +2,7 @@ import Link from 'next/link'
 import ProductCard from '@/components/ProductCard'
 import HeroCarousel from '@/components/HeroCarousel'
 import CategoryCarousel from '@/components/CategoryCarousel'
-import AboutSection from '@/components/AboutSection'
+import AboutSectionDynamic from '@/components/AboutSectionDynamic'
 import { getProducts } from '@/lib/products'
 
 export default function HomePage() {
@@ -17,7 +17,7 @@ export default function HomePage() {
       <CategoryCarousel />
 
       {/* About Section */}
-      <AboutSection />
+      <AboutSectionDynamic />
 
       {/* Featured Products */}
       <section className="py-16 bg-gray-50 dark:bg-gray-800 transition-colors duration-300">

@@ -124,3 +124,11 @@ model SyncLog {
   createdAt DateTime @default(now())
 }
 
+// Simple CMS storage: singleton row with JSON blobs
+model SiteSettings {
+  id         String   @id @default("default")
+  heroSlides Json
+  about      Json
+  updatedAt  DateTime @updatedAt
+  createdAt  DateTime @default(now())
+}

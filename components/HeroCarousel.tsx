@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi'
 import Link from 'next/link'
+import { useContent } from '@/context/ContentContext'
 
 interface Slide {
   id: number
@@ -14,13 +15,13 @@ interface Slide {
   linkText: string
 }
 
-const slides: Slide[] = [
+const defaultSlides: Slide[] = [
   {
     id: 1,
     title: 'Tecnologia de Ponta',
     subtitle: 'Bem-vindo à TopCell',
     description: 'Os melhores smartphones e gadgets do mercado com tecnologia de última geração',
-    image: 'https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=1920',
+    image: '../public/hero.png',
     link: '/products?category=smartphones',
     linkText: 'Ver Smartphones'
   },
@@ -47,6 +48,8 @@ const slides: Slide[] = [
 export default function HeroCarousel() {
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isAutoPlaying, setIsAutoPlaying] = useState(true)
+  const { content } = useContent()
+  const slides: Slide[] = (content?.heroSlides as any) || defaultSlides
 
   useEffect(() => {
     if (!isAutoPlaying) return

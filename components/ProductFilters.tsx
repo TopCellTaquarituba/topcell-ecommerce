@@ -107,7 +107,7 @@ export default function ProductFilters({ products, onFiltersChange, isOpen, onTo
       {/* Mobile Filter Button */}
       <button
         onClick={onToggle}
-        className="lg:hidden fixed bottom-6 right-6 bg-primary-600 text-white p-4 rounded-full shadow-lg z-40 flex items-center space-x-2"
+        className="lg:hidden fixed bottom-24 right-6 bg-primary-600 text-white p-4 rounded-full shadow-lg z-40 flex items-center space-x-2"
       >
         <FiFilter className="w-5 h-5" />
         <span className="font-semibold">Filtros</span>
