@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useCart } from '@/context/CartContext'
 import { useRouter } from 'next/navigation'
 import CEPInput, { CEPData } from '@/components/CEPInput'
@@ -24,8 +24,13 @@ export default function CheckoutPage() {
     paymentMethod: 'credit',
   })
 
+  useEffect(() => {
+    if (items.length === 0) {
+      router.push('/cart')
+    }
+  }, [items.length, router])
+
   if (items.length === 0) {
-    router.push('/cart')
     return null
   }
 

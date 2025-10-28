@@ -11,6 +11,7 @@ export interface Product {
   specifications: { [key: string]: string }
   images: string[]
   inStock: boolean
+  createdAt?: string
   reviews?: Review[]
 }
 
@@ -402,4 +403,3 @@ export function getProductById(id: string): Product | undefined {
 export function getProductsByCategory(category: string): Product[] {
   return getProducts().filter((product) => product.category === category)
 }
-

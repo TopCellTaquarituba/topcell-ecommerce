@@ -39,8 +39,8 @@ export default function ProductFilters({ products, onFiltersChange, isOpen, onTo
   })
 
   // Extract unique values for filters
-  const categories = [...new Set(products.map(p => p.category))]
-  const brands = [...new Set(products.map(p => p.brand || 'Outros'))]
+  const categories = Array.from(new Set(products.map(p => p.category)))
+  const brands = Array.from(new Set(products.map(p => p.brand || 'Outros')))
   const maxPrice = Math.max(...products.map(p => p.price))
 
   const handleCategoryChange = (category: string) => {
@@ -128,12 +128,14 @@ export default function ProductFilters({ products, onFiltersChange, isOpen, onTo
 
       {/* Filters Sidebar */}
       <div className={`
-        fixed lg:sticky lg:top-24 lg:left-0 lg:z-0 z-50
-        w-80 h-full lg:h-auto
+        fixed lg:sticky z-50 lg:z-0
+        top-0 right-0 lg:top-24 lg:left-0
+        h-full lg:h-auto
+        w-full max-w-sm lg:w-80
         bg-white dark:bg-gray-800 shadow-xl lg:shadow-none
         transform transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}
-        overflow-y-auto scrollbar-hide
+        overscroll-contain overflow-y-auto scrollbar-hide
       `}>
         <div className="p-6">
           {/* Header */}

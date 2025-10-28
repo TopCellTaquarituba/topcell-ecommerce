@@ -191,6 +191,7 @@ export default function AboutSection() {
               Nossa Missão
             </h3>
             <p className="text-xl text-gray-600 dark:text-gray-400 max-w-4xl mx-auto leading-relaxed mb-8">
+              {/* eslint-disable-next-line react/no-unescaped-entities */}
               "Democratizar o acesso à tecnologia de qualidade, oferecendo produtos eletrônicos inovadores com preços justos, atendimento excepcional e garantia total da satisfação do cliente."
             </p>
             <div className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-8">

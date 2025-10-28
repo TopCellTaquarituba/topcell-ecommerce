@@ -18,6 +18,13 @@ export default function ProductDetailPage() {
 
   const product = getProductById(params.id as string)
 
+  // Initialize reviews from product data (unconditional hook)
+  useEffect(() => {
+    if (product && product.reviews) {
+      setReviews(product.reviews)
+    }
+  }, [product])
+
   if (!product) {
     return (
       <div className="container-custom py-20 text-center">
@@ -29,12 +36,7 @@ export default function ProductDetailPage() {
     )
   }
 
-  // Initialize reviews from product data
-  useEffect(() => {
-    if (product.reviews) {
-      setReviews(product.reviews)
-    }
-  }, [product.reviews])
+  
 
   const handleAddToCart = () => {
     for (let i = 0; i < quantity; i++) {

@@ -1,0 +1,126 @@
+// Prisma schema for PostgreSQL backing the e-commerce + Bling ERP integration
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Category {
+  id       String    @id @default(cuid())
+  slug     String    @unique
+  name     String
+  products Product[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Brand {
+  id       String    @id @default(cuid())
+  slug     String    @unique
+  name     String
+  products Product[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id           String   @id @default(cuid())
+  externalId   String?  @unique // Bling product id (if synced)
+  name         String
+  description  String
+  price        Decimal  @db.Numeric(12,2)
+  originalPrice Decimal? @db.Numeric(12,2)
+  image        String
+  images       String[]
+  rating       Float     @default(0)
+  inStock      Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  category   Category? @relation(fields: [categoryId], references: [id])
+  categoryId String?
+  brand      Brand?    @relation(fields: [brandId], references: [id])
+  brandId    String?
+
+  reviews    Review[]
+  orderItems OrderItem[]
+  inventory  InventoryMovement[]
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  product   Product  @relation(fields: [productId], references: [id])
+  productId String
+  userId    String
+  userName  String
+  userAvatar String?
+  rating    Int
+  title     String
+  comment   String
+  date      DateTime @default(now())
+  helpful   Int      @default(0)
+  verified  Boolean  @default(false)
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  externalId String? @unique // Bling contact id
+  name      String
+  email     String?  @unique
+  phone     String?
+  orders    Order[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Order {
+  id          String   @id @default(cuid())
+  externalId  String?  @unique // Bling order id
+  number      String?  @unique
+  status      String   @default("pending")
+  total       Decimal  @db.Numeric(12,2)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  customer   Customer? @relation(fields: [customerId], references: [id])
+  customerId String?
+
+  items      OrderItem[]
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  order     Order   @relation(fields: [orderId], references: [id])
+  orderId   String
+  product   Product @relation(fields: [productId], references: [id])
+  productId String
+  quantity  Int
+  price     Decimal @db.Numeric(12,2)
+}
+
+model InventoryMovement {
+  id         String   @id @default(cuid())
+  product    Product  @relation(fields: [productId], references: [id])
+  productId  String
+  quantity   Int
+  type       String   // in|out|adjust
+  note       String?
+  createdAt  DateTime @default(now())
+  externalRef String? // e.g., Bling invoice id
+}
+
+model SyncLog {
+  id        String   @id @default(cuid())
+  source    String   // bling|manual
+  entity    String   // product|order|inventory
+  action    String   // create|update|delete
+  externalId String?
+  details   Json?
+  createdAt DateTime @default(now())
+}
+
