@@ -117,11 +117,24 @@ export default function Dashboard() {
                 <span>Produtos</span>
               </Link>
               <Link
+                href="/admin/sales"
+                className="flex items-center space-x-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition btn-animate"
+              >
+                <FiShoppingCart className="w-4 h-4" />
+                <span>Vendas</span>
+              </Link>
+              <Link
                 href="/admin/analytics"
                 className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition btn-animate"
               >
                 <FiBarChart2 className="w-4 h-4" />
                 <span>Analytics</span>
+              </Link>
+              <Link
+                href="/admin/content"
+                className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition btn-animate"
+              >
+                <span>Configurar Site</span>
               </Link>
               <button
                 onClick={handleLogout}

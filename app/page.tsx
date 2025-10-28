@@ -4,6 +4,7 @@ import HeroCarousel from '@/components/HeroCarousel'
 import CategoryCarousel from '@/components/CategoryCarousel'
 import AboutSectionDynamic from '@/components/AboutSectionDynamic'
 import { getProducts } from '@/lib/products'
+import FAQSection from '@/components/FAQSection'
 
 export default function HomePage() {
   const featuredProducts = getProducts().slice(0, 8)
@@ -56,6 +57,9 @@ export default function HomePage() {
           </Link>
         </div>
       </section>
+
+      {/* FAQ Section (final da página) */}
+      <FAQSection />
     </div>
   )
 }
