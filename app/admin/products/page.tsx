@@ -43,7 +43,13 @@ export default function ProductsManagement() {
       description: '',
       images: [],
     }
-    await fetch('/api/products', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+    const res = await fetch('/api/products', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+    let msg = ''
+    try { const j = await res.json(); msg = j?.error || '' } catch {}
+    if (!res.ok) {
+      alert('Falha ao salvar: ' + (msg || res.statusText))
+      return
+    }
     setShowAddForm(false)
     form.reset()
     await load()

@@ -94,7 +94,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true, id: created.id })
   } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message || 'invalid payload' }, { status: 400 })
+    console.error('POST /api/products error', e)
+    return NextResponse.json({ ok: false, error: e?.message || 'invalid payload' }, { status: 500 })
   }
 }
 
