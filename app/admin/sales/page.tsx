@@ -1,4 +1,27 @@
-"use client"
+<style jsx global>{\r\n          /* Consistent inputs in dark/light without Tailwind @apply */
+          .input {
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.5rem;
+            border: 1px solid #D1D5DB; /* gray-300 */
+            background: #ffffff; /* white */
+            color: #111827; /* gray-900 */
+            width: 100%;
+            display: block;
+            line-height: 1.25rem;
+            appearance: none;
+          }
+          .input::placeholder { color: #9CA3AF; }
+          .dark .input {
+            border-color: #4B5563; /* gray-600 */
+            background: #374151; /* gray-700 */
+            color: #F3F4F6; /* gray-100 */
+            color-scheme: dark; /* improves native date/select controls */
+          }
+          .dark .input::placeholder { color: #D1D5DB; opacity: 0.7; }
+          /* Ensure dropdown options in dark mode are readable */
+          .dark select.input option { background: #374151; color: #F3F4F6; }
+          button.input { text-align: left; }
+        }</style>use client"
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
@@ -31,6 +54,8 @@ type Preset = '7d' | '30d' | 'month' | 'custom'
 function formatCurrency(n: number) {
   return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
+
+const ALL_STATUSES = ['pending','paid','shipped','delivered','canceled'] as const
 
 export default function SalesAdminPage() {
   const [preset, setPreset] = useState<Preset>('7d')
@@ -180,11 +205,7 @@ export default function SalesAdminPage() {
 
             <div>
               <label className="block text-xs mb-1">Status</label>
-              <select multiple value={status} onChange={(e)=> setStatus(Array.from(e.target.selectedOptions).map(o=>o.value))} className="w-full h-[86px] input">
-                {['pending','paid','shipped','delivered','canceled'].map(s=> (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
+              <StatusMultiSelect value={status} onChange={setStatus} />
             </div>
 
             <div className="grid grid-cols-2 gap-2">
@@ -279,7 +300,25 @@ export default function SalesAdminPage() {
         </div>
 
         <style jsx global>{`
-          .input { @apply px-3 py-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100; }
+          /* Consistent inputs in dark/light without Tailwind @apply */
+          .input {
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.5rem;
+            border: 1px solid #D1D5DB; /* gray-300 */
+            background: #ffffff; /* white */
+            color: #111827; /* gray-900 */
+            width: 100%;
+          }
+          .input::placeholder { color: #9CA3AF; }
+          .dark .input {
+            border-color: #4B5563; /* gray-600 */
+            background: #374151; /* gray-700 */
+            color: #F3F4F6; /* gray-100 */
+            color-scheme: dark; /* improves native date/select controls */
+          }
+          .dark .input::placeholder { color: #D1D5DB; opacity: 0.7; }
+          /* Ensure dropdown options in dark mode are readable */
+          .dark select.input option { background: #374151; color: #F3F4F6; }
         `}</style>
       </main>
     </div>
@@ -304,3 +343,53 @@ function SalesBars({ data }: { data: { date: string; revenue: number; count: num
   )
 }
 
+function StatusMultiSelect({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
+  const [open, setOpen] = useState(false)
+  const [anchorEl, setAnchorEl] = useState<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => {
+      if (!anchorEl) return
+      if (!anchorEl.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [anchorEl])
+
+  const label = value.length
+    ? value.join(', ')
+    : 'Selecione...'
+
+  const toggle = (s: string) => {
+    const set = new Set(value)
+    if (set.has(s)) set.delete(s); else set.add(s)
+    onChange(Array.from(set))
+  }
+
+  const selectAll = () => onChange(Array.from(ALL_STATUSES))
+  const clearAll = () => onChange([])
+
+  return (
+    <div className="relative" ref={setAnchorEl as any}>
+      <button type="button" className="input text-left cursor-pointer h-[42px]" onClick={() => setOpen(o=>!o)}>
+        {label}
+      </button>
+      {open && (
+        <div className="absolute z-20 mt-1 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2">
+          <div className="flex justify-between items-center px-2 py-1 text-xs text-gray-600 dark:text-gray-300">
+            <button className="underline" onClick={selectAll}>Selecionar todos</button>
+            <button className="underline" onClick={clearAll}>Limpar</button>
+          </div>
+          <div className="max-h-48 overflow-auto divide-y divide-gray-100 dark:divide-gray-700">
+            {ALL_STATUSES.map((s) => (
+              <label key={s} className="flex items-center gap-2 px-2 py-2 text-sm text-gray-800 dark:text-gray-100 cursor-pointer">
+                <input type="checkbox" checked={value.includes(s)} onChange={() => toggle(s)} />
+                <span className="capitalize">{s}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

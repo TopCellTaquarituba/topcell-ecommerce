@@ -152,9 +152,23 @@ export default function AdminContentPage() {
       </div>
 
       <style jsx global>{`
-        .input { @apply px-3 py-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100; }
+        /* Fix dark mode for inputs without relying on Tailwind @apply in styled-jsx */
+        .input { 
+          padding: 0.5rem 0.75rem; 
+          border-radius: 0.5rem; 
+          border: 1px solid #D1D5DB; /* gray-300 */
+          background: #ffffff; /* white */
+          color: #111827; /* gray-900 */
+          width: 100%;
+        }
+        .input::placeholder { color: #9CA3AF; /* gray-400 */ }
+        .dark .input { 
+          border-color: #4B5563; /* gray-600 */
+          background: #374151; /* gray-700 */
+          color: #F3F4F6; /* gray-100 */
+        }
+        .dark .input::placeholder { color: #D1D5DB; opacity: 0.7; }
       `}</style>
     </div>
   )
 }
-
