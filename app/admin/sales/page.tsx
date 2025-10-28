@@ -1,27 +1,4 @@
-<style jsx global>{\r\n          /* Consistent inputs in dark/light without Tailwind @apply */
-          .input {
-            padding: 0.5rem 0.75rem;
-            border-radius: 0.5rem;
-            border: 1px solid #D1D5DB; /* gray-300 */
-            background: #ffffff; /* white */
-            color: #111827; /* gray-900 */
-            width: 100%;
-            display: block;
-            line-height: 1.25rem;
-            appearance: none;
-          }
-          .input::placeholder { color: #9CA3AF; }
-          .dark .input {
-            border-color: #4B5563; /* gray-600 */
-            background: #374151; /* gray-700 */
-            color: #F3F4F6; /* gray-100 */
-            color-scheme: dark; /* improves native date/select controls */
-          }
-          .dark .input::placeholder { color: #D1D5DB; opacity: 0.7; }
-          /* Ensure dropdown options in dark mode are readable */
-          .dark select.input option { background: #374151; color: #F3F4F6; }
-          button.input { text-align: left; }
-        }</style>use client"
+'use client'
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'

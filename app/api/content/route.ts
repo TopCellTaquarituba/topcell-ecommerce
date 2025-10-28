@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+export const runtime = 'nodejs'
 import { loadContent, saveContent } from '@/lib/contentStore'
 
 export async function GET() {
@@ -15,4 +16,3 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ ok: false, error: e?.message || 'invalid payload' }, { status: 400 })
   }
 }
-

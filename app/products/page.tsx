@@ -1,8 +1,7 @@
 'use client'
 
 import { useSearchParams } from 'next/navigation'
-import { useState, useMemo } from 'react'
-import { getProducts } from '@/lib/products'
+import { useState, useMemo, useEffect } from 'react'
 import ProductCard from '@/components/ProductCard'
 import ProductFilters, { FilterState } from '@/components/ProductFilters'
 import { FiGrid, FiList } from 'react-icons/fi'
@@ -21,7 +20,24 @@ export default function ProductsPage() {
     searchQuery: ''
   })
 
-  const allProducts = getProducts()
+  const [allProducts, setAllProducts] = useState<any[]>([])
+
+  useEffect(() => {
+    async function load() {
+      const res = await fetch('/api/products', { cache: 'no-store' })
+      const json = await res.json()
+      const items = (json.items || []).map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        price: Number(p.price),
+        image: p.image,
+        category: p.category || '',
+        rating: p.rating || 0,
+      }))
+      setAllProducts(items)
+    }
+    load()
+  }, [])
 
   // Apply filters
   const filteredProducts = useMemo(() => {

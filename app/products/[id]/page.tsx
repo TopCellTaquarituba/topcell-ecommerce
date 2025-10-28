@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { getProductById, Review } from '@/lib/products'
+import type { Review } from '@/lib/products'
 import { useCart } from '@/context/CartContext'
 import { FiShoppingCart, FiMinus, FiPlus, FiStar, FiTruck, FiShield } from 'react-icons/fi'
 import Link from 'next/link'
@@ -17,7 +17,32 @@ export default function ProductDetailPage() {
   const [reviews, setReviews] = useState<Review[]>([])
   const [showPayments, setShowPayments] = useState(false)
 
-  const product = getProductById(params.id as string)
+  const [product, setProduct] = useState<any | null>(null)
+
+  useEffect(() => {
+    async function load() {
+      const res = await fetch(`/api/products/${params.id}`, { cache: 'no-store' })
+      if (res.ok) {
+        const json = await res.json()
+        const p = json.item
+        setProduct({
+          id: p.id,
+          name: p.name,
+          price: Number(p.price),
+          originalPrice: p.originalPrice != null ? Number(p.originalPrice) : undefined,
+          image: p.image,
+          images: p.images || [p.image].filter(Boolean),
+          category: p.category || '',
+          rating: p.rating || 0,
+          description: p.description || '',
+          specifications: {},
+        })
+      } else {
+        setProduct(null)
+      }
+    }
+    load()
+  }, [params.id])
 
   // Initialize reviews from product data (unconditional hook)
   useEffect(() => {
@@ -87,7 +112,7 @@ export default function ProductDetailPage() {
           <div className="flex gap-4">
             {/* Thumbs */}
             <div className="hidden md:flex md:flex-col gap-2 w-20">
-              {product.images.map((img, index) => (
+              {product.images.map((img: string, index: number) => (
                 <button
                   key={index}
                   onClick={() => setSelectedImageIndex(index)}
@@ -132,10 +157,10 @@ export default function ProductDetailPage() {
 
             <h3 className="text-xl font-bold mt-8 mb-3 dark:text-white">Características</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {Object.entries(product.specifications).map(([key, value]) => (
+              {Object.entries(product.specifications || {}).map(([key, value]) => (
                 <div key={key} className="border border-gray-200 dark:border-gray-700 rounded p-3">
                   <div className="text-gray-500 dark:text-gray-400 text-xs mb-1">{key}</div>
-                  <div className="font-medium dark:text-white">{value}</div>
+                  <div className="font-medium dark:text-white">{String(value)}</div>
                 </div>
               ))}
             </div>

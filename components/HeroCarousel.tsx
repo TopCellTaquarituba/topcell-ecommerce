@@ -15,35 +15,7 @@ interface Slide {
   linkText: string
 }
 
-const defaultSlides: Slide[] = [
-  {
-    id: 1,
-    title: 'Tecnologia de Ponta',
-    subtitle: 'Bem-vindo à TopCell',
-    description: 'Os melhores smartphones e gadgets do mercado com tecnologia de última geração',
-    image: '../public/hero.png',
-    link: '/products?category=smartphones',
-    linkText: 'Ver Smartphones'
-  },
-  {
-    id: 2,
-    title: 'Produtividade sem Limites',
-    subtitle: 'Notebooks Potentes',
-    description: 'Encontre o notebook ideal para seu trabalho e criatividade',
-    image: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=1920',
-    link: '/products?category=laptops',
-    linkText: 'Ver Notebooks'
-  },
-  {
-    id: 3,
-    title: 'Complete seu Setup',
-    subtitle: 'Acessórios Essenciais',
-    description: 'Fones, carregadores e muito mais para turbinar seus dispositivos',
-    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=1920',
-    link: '/products?category=accessories',
-    linkText: 'Ver Acessórios'
-  }
-]
+const defaultSlides: Slide[] = []
 
 export default function HeroCarousel() {
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -60,6 +32,10 @@ export default function HeroCarousel() {
 
     return () => clearInterval(interval)
   }, [isAutoPlaying])
+
+  if (!slides || slides.length === 0) {
+    return null
+  }
 
   const goToSlide = (index: number) => {
     setCurrentSlide(index)
@@ -156,4 +132,11 @@ export default function HeroCarousel() {
     </div>
   )
 }
+
+
+
+
+
+
+
 
