@@ -81,9 +81,6 @@ export default function Footer() {
               <a href="#" className="hover:text-primary-400 transition">
                 <FiTwitter className="w-6 h-6" />
               </a>
-              <a href="#" className="hover:text-primary-400 transition">
-                <FiLinkedin className="w-6 h-6" />
-              </a>
             </div>
           </div>
         </div>
