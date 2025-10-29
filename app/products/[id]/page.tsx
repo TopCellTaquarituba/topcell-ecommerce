@@ -65,7 +65,7 @@ export default function ProductDetailPage() {
   if (!product) {
     return (
       <div className="container-custom py-20 text-center">
-        <h1 className="text-3xl font-bold mb-4">Produto nÃ£o encontrado</h1>
+        <h1 className="text-3xl font-bold mb-4">Produto não encontrado</h1>
         <Link href="/products" className="text-primary-600 hover:underline">
           Voltar para a lista de produtos
         </Link>
@@ -145,7 +145,7 @@ export default function ProductDetailPage() {
     <div className="container-custom py-6">
       {/* Breadcrumb */}
       <nav className="text-sm text-gray-600 dark:text-gray-400 mb-8">
-        <Link href="/" className="hover:text-primary-600">InÃ­cio</Link>
+        <Link href="/" className="hover:text-primary-600">Início</Link>
         {' / '}
         <Link href="/products" className="hover:text-primary-600">Produtos</Link>
         {' / '}
@@ -192,16 +192,16 @@ export default function ProductDetailPage() {
                   />
                 ))}
               </div>
-              <span className="text-gray-600 dark:text-gray-400">{averageRating.toFixed(1)} â€¢ {reviews.length} avaliaÃ§Ãµes</span>
+              <span className="text-gray-600 dark:text-gray-400">{averageRating.toFixed(1)} • {reviews.length} avaliações</span>
             </div>
           </div>
 
           {/* Description & Characteristics */}
           <div className="mt-8">
-            <h3 className="text-xl font-bold mb-3 dark:text-white">DescriÃ§Ã£o</h3>
+            <h3 className="text-xl font-bold mb-3 dark:text-white">Descrição</h3>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{product.description}</p>
 
-            <h3 className="text-xl font-bold mt-8 mb-3 dark:text-white">CaracterÃ­sticas</h3>
+            <h3 className="text-xl font-bold mt-8 mb-3 dark:text-white">Características</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {Object.entries(product.specifications || {}).map(([key, value]) => (
                 <div key={key} className="border border-gray-200 dark:border-gray-700 rounded p-3">
@@ -234,7 +234,7 @@ export default function ProductDetailPage() {
                 )}
               </div>
               {/* Installments + payment methods */}
-              <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Em atÃ© 10x sem juros</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Em até 10x sem juros</div>
               <button
                 type="button"
                 onClick={() => setShowPayments((v) => !v)}
@@ -254,7 +254,7 @@ export default function ProductDetailPage() {
                     </div>
                     {/* Boleto */}
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-700 dark:text-gray-300">Boleto bancÃ¡rio (Ã  vista)</span>
+                        <span className="text-gray-700 dark:text-gray-300">Boleto bancário (à vista)</span>
                       <span className="font-semibold text-gray-900 dark:text-white">
                         R$ {product.price.toFixed(2).replace('.', ',')}
                       </span>
@@ -262,7 +262,7 @@ export default function ProductDetailPage() {
                     {/* CartÃƒÂµes */}
                     <div>
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-700 dark:text-gray-300">CartÃ£o de crÃ©dito</span>
+                        <span className="text-gray-700 dark:text-gray-300">Cartão de crédito</span>
                         <span className="font-semibold text-gray-900 dark:text-white">
                           10x de R$ {(product.price / 10).toFixed(2).replace('.', ',')} sem juros
                         </span>
@@ -292,7 +292,7 @@ export default function ProductDetailPage() {
                         {q.error && q.error !== '0' ? (
                           <span className="text-red-600 text-xs">{q.message || 'erro'}</span>
                         ) : (
-                          <span className="font-semibold text-gray-900 dark:text-white">R$ {Number(q.price||0).toFixed(2).replace('.', ',')} â€¢ {q.deadlineDays} dias</span>
+                          <span className="font-semibold text-gray-900 dark:text-white">R$ {Number(q.price||0).toFixed(2).replace('.', ',')} • {q.deadlineDays} dias</span>
                         )}
                       </div>
                     ))}
@@ -303,11 +303,11 @@ export default function ProductDetailPage() {
               <div className="space-y-2 mb-6">
                 <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                   <FiTruck className="w-5 h-5 text-primary-600" />
-                  <span>Frete grÃ¡tis para a sua regiÃ£o</span>
+                  <span>Frete grátis para a sua região</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                   <FiShield className="w-5 h-5 text-primary-600" />
-                  <span>DevoluÃ§Ã£o grÃ¡tis em atÃ© 30 dias</span>
+                  <span>Devolução grátis em até 30 dias</span>
                 </div>
               </div>
               {/* Quantity */}
