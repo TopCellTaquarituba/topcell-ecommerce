@@ -28,22 +28,22 @@ model Brand {
 }
 
 model Product {
-  id           String   @id @default(cuid())
-  externalId   String?  @unique // Bling product id (if synced)
-  name         String
-  description  String
-  price        Decimal  @db.Decimal(12,2)
-  originalPrice Decimal? @db.Decimal(12,2)
-  image        String
-  images       String[]
+  id            String   @id @default(cuid())
+  externalId    String?  @unique // Bling product id (if synced)
+  name          String
+  description   String
+  price         Decimal  @db.Decimal(12, 2)
+  originalPrice Decimal? @db.Decimal(12, 2)
+  image         String
+  images        String[]
   // ML-style details
-  specs        Json?
-  customFields Json?
-  rating       Float     @default(0)
-  featured     Boolean   @default(false)
-  inStock      Boolean   @default(true)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  specs         Json?
+  customFields  Json?
+  rating        Float    @default(0)
+  featured      Boolean  @default(false) // <--- ADICIONE ESTA LINHA
+  inStock       Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   // Relations
   category   Category? @relation(fields: [categoryId], references: [id])
@@ -55,6 +55,7 @@ model Product {
   orderItems OrderItem[]
   inventory  InventoryMovement[]
 }
+
 
 model Review {
   id        String   @id @default(cuid())
