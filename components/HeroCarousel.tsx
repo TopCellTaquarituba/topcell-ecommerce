@@ -31,7 +31,7 @@ export default function HeroCarousel() {
     }, 5000)
 
     return () => clearInterval(interval)
-  }, [isAutoPlaying])
+  }, [isAutoPlaying, slides.length])
 
   if (!slides || slides.length === 0) {
     return null

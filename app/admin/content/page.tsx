@@ -11,7 +11,7 @@ export default function AdminContentPage() {
   useEffect(() => {
     // ensure latest content when opening the page
     refresh()
-  }, [])
+  }, [refresh])
 
   const handleSlideChange = (index: number, field: string, value: string) => {
     const heroSlides = [...content.heroSlides]

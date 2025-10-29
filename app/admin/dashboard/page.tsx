@@ -46,7 +46,7 @@ export default function Dashboard() {
     animateCounter(stats.totalSales, 'sales')
     animateCounter(stats.totalOrders, 'orders')
     animateCounter(stats.totalCustomers, 'customers')
-  }, [])
+  }, [stats.totalSales, stats.totalOrders, stats.totalCustomers])
 
   const handleLogout = () => {
     logout()

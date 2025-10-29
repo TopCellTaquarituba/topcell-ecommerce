@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
     const { name, description = '', price, originalPrice, image = '', images = [], categoryName, brandName, stock, specs, customFields } = body
     if (!name || price == null) return NextResponse.json({ ok: false, error: 'name and price are required' }, { status: 400 })
 
-    async function createWith(dataExtra: any) {
+    const createWith = async (dataExtra: any) => {
       return prisma.product.create({
         data: {
           name,

@@ -76,6 +76,14 @@ export default function ProductDetailPage() {
     router.push('/cart')
   }
 
+  const handleBuyNow = () => {
+    // Add selected quantity to cart and go straight to checkout
+    for (let i = 0; i < quantity; i++) {
+      addToCart({ id: product.id, name: product.name, price: product.price, image: product.image })
+    }
+    router.push('/checkout')
+  }
+
   const handleAddReview = (newReview: Omit<Review, 'id' | 'date' | 'helpful'>) => {
     const review: Review = {
       ...newReview,
@@ -258,7 +266,7 @@ export default function ProductDetailPage() {
                 <button onClick={handleAddToCart} className="w-full bg-primary-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-700 transition flex items-center justify-center gap-2">
                   <FiShoppingCart className="w-5 h-5" /> Adicionar ao carrinho
                 </button>
-                <button className="w-full border-2 border-primary-600 text-primary-600 dark:text-primary-400 px-6 py-3 rounded-lg font-semibold hover:bg-primary-50 dark:hover:bg-primary-900/20 transition">
+                <button onClick={handleBuyNow} className="w-full border-2 border-primary-600 text-primary-600 dark:text-primary-400 px-6 py-3 rounded-lg font-semibold hover:bg-primary-50 dark:hover:bg-primary-900/20 transition">
                   Comprar agora
                 </button>
               </div>

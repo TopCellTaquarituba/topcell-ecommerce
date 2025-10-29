@@ -248,16 +248,66 @@ export default function CheckoutPage() {
             {/* (keeping similar structure as before for brevity) */}
             
             {step === 'payment' && (
-              <div className="space-y-4">
-                <h2 className="text-2xl font-bold mb-6 dark:text-white">Pagamento</h2>
-                {/* Payment form similar to before */}
+              <div className="space-y-6">
+                <h2 className="text-2xl font-bold mb-2 dark:text-white">Pagamento</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold mb-2 text-gray-700 dark:text-gray-300">Forma de pagamento</label>
+                    <select
+                      name="paymentMethod"
+                      value={formData.paymentMethod}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    >
+                      <option value="credit">Cartão de crédito</option>
+                      <option value="pix">Pix</option>
+                      <option value="boleto">Boleto</option>
+                    </select>
+                  </div>
+                </div>
               </div>
             )}
 
             {step === 'review' && (
-              <div>
-                <h2 className="text-2xl font-bold mb-6 dark:text-white">Revisão do Pedido</h2>
-                {/* Review content similar to before using formData */}
+              <div className="space-y-6">
+                <h2 className="text-2xl font-bold mb-2 dark:text-white">Revisão do Pedido</h2>
+                <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                  <h3 className="font-semibold mb-2 dark:text-white">Endereço de envio</h3>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    {formData.name} • {formData.phone}<br/>
+                    {formData.address}, {formData.number} {formData.complement && `- ${formData.complement}`}<br/>
+                    {formData.neighborhood} - {formData.city}/{formData.state} • CEP {formData.cep}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                  <h3 className="font-semibold mb-2 dark:text-white">Pagamento</h3>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    {formData.paymentMethod === 'credit' && 'Cartão de crédito'}
+                    {formData.paymentMethod === 'pix' && 'Pix'}
+                    {formData.paymentMethod === 'boleto' && 'Boleto bancário'}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                  <h3 className="font-semibold mb-4 dark:text-white">Itens</h3>
+                  <div className="space-y-3">
+                    {items.map((it) => (
+                      <div key={it.id} className="flex items-center gap-4">
+                        <img src={it.image} alt={it.name} className="w-16 h-16 object-cover rounded" />
+                        <div className="flex-1">
+                          <div className="font-medium dark:text-white">{it.name}</div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">Qtd: {it.quantity}</div>
+                        </div>
+                        <div className="font-semibold text-gray-900 dark:text-white">
+                          R$ {(it.price * it.quantity).toFixed(2).replace('.', ',')}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-4 flex justify-between border-t border-gray-200 dark:border-gray-700 pt-3">
+                    <span className="font-semibold dark:text-white">Total</span>
+                    <span className="font-bold text-primary-600 dark:text-primary-400">R$ {getTotalPrice().toFixed(2).replace('.', ',')}</span>
+                  </div>
+                </div>
               </div>
             )}
 

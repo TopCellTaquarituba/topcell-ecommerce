@@ -5,7 +5,7 @@ import { getPrisma } from '@/lib/prisma'
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const prisma = await getPrisma()
-  const p = await prisma.product.findUnique({ where: { id: params.id }, include: { category: true, brand: true } })
+  const p = await prisma.product.findUnique({ where: { id: params.id }, include: { category: true, brand: true, reviews: true } })
   if (!p) return NextResponse.json({ ok: false, error: 'not found' }, { status: 404 })
   const mv = await prisma.inventoryMovement.aggregate({ _sum: { quantity: true }, where: { productId: p.id } })
   return NextResponse.json({
@@ -25,6 +25,18 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       inStock: p.inStock,
       stock: mv._sum.quantity || 0,
       createdAt: p.createdAt,
+      reviews: (p.reviews || []).map((r: any) => ({
+        id: r.id,
+        userId: r.userId,
+        userName: r.userName,
+        userAvatar: r.userAvatar || undefined,
+        rating: r.rating,
+        title: r.title,
+        comment: r.comment,
+        date: r.date,
+        helpful: r.helpful || 0,
+        verified: r.verified || false,
+      })),
     },
   })
 }
@@ -34,7 +46,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     const body = await req.json()
     const prisma = await getPrisma()
     const { name, description, price, originalPrice, image, images, categoryName, brandName, stock, specs, customFields } = body
-    async function updateWith(dataExtra: any) {
+    const updateWith = async (dataExtra: any) => {
       return prisma.product.update({
         where: { id: params.id },
         data: {
