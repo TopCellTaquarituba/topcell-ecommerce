@@ -36,6 +36,9 @@ model Product {
   originalPrice Decimal? @db.Decimal(12,2)
   image        String
   images       String[]
+  // ML-style details
+  specs        Json?
+  customFields Json?
   rating       Float     @default(0)
   inStock      Boolean   @default(true)
   createdAt    DateTime  @default(now())

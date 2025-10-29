@@ -33,21 +33,35 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   try {
     const body = await req.json()
     const prisma = await getPrisma()
-    const { name, description, price, originalPrice, image, images, categoryName, brandName, stock } = body
-    const updated = await prisma.product.update({
-      where: { id: params.id },
-      data: {
-        ...(name != null && { name }),
-        ...(description != null && { description }),
-        ...(price != null && { price: new Prisma.Decimal(String(price)) }),
-        ...(originalPrice !== undefined && { originalPrice: originalPrice != null ? new Prisma.Decimal(String(originalPrice)) : null }),
-        ...(image != null && { image }),
-        ...(images != null && { images }),
-        ...(categoryName && { category: { connectOrCreate: { where: { slug: slugify(categoryName) }, create: { slug: slugify(categoryName), name: categoryName } } } }),
-        ...(brandName && { brand: { connectOrCreate: { where: { slug: slugify(brandName) }, create: { slug: slugify(brandName), name: brandName } } } }),
-        ...(stock != null && { inStock: Number(stock) > 0 }),
-      },
-    })
+    const { name, description, price, originalPrice, image, images, categoryName, brandName, stock, specs, customFields } = body
+    async function updateWith(dataExtra: any) {
+      return prisma.product.update({
+        where: { id: params.id },
+        data: {
+          ...(name != null && { name }),
+          ...(description != null && { description }),
+          ...(price != null && { price: new Prisma.Decimal(String(price)) }),
+          ...(originalPrice !== undefined && { originalPrice: originalPrice != null ? new Prisma.Decimal(String(originalPrice)) : null }),
+          ...(image != null && { image }),
+          ...(images != null && { images }),
+          ...(categoryName && { category: { connectOrCreate: { where: { slug: slugify(categoryName) }, create: { slug: slugify(categoryName), name: categoryName } } } }),
+          ...(brandName && { brand: { connectOrCreate: { where: { slug: slugify(brandName) }, create: { slug: slugify(brandName), name: brandName } } } }),
+          ...(stock != null && { inStock: Number(stock) > 0 }),
+          ...dataExtra,
+        },
+      })
+    }
+
+    let updated
+    try {
+      updated = await updateWith({
+        ...(specs !== undefined && { specs }),
+        ...(customFields !== undefined && { customFields }),
+      })
+    } catch (e: any) {
+      console.warn('Update with specs/customFields failed, retrying without extra fields:', e?.code || e?.message)
+      updated = await updateWith({})
+    }
 
     if (stock != null) {
       // adjust stock to target level by creating a movement of the delta

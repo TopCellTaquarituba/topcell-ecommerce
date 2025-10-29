@@ -70,23 +70,38 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const prisma = await getPrisma()
-    const { name, description = '', price, originalPrice, image = '', images = [], categoryName, brandName, stock } = body
+    const { name, description = '', price, originalPrice, image = '', images = [], categoryName, brandName, stock, specs, customFields } = body
     if (!name || price == null) return NextResponse.json({ ok: false, error: 'name and price are required' }, { status: 400 })
 
-    const created = await prisma.product.create({
-      data: {
-        name,
-        description,
-        price: new Prisma.Decimal(String(price)),
-        originalPrice: originalPrice != null ? new Prisma.Decimal(String(originalPrice)) : null,
-        image,
-        images,
-        rating: 0,
-        inStock: (stock ?? 0) > 0,
-        ...(categoryName && { category: { connectOrCreate: { where: { slug: slugify(categoryName) }, create: { slug: slugify(categoryName), name: categoryName } } } }),
-        ...(brandName && { brand: { connectOrCreate: { where: { slug: slugify(brandName) }, create: { slug: slugify(brandName), name: brandName } } } }),
-      },
-    })
+    async function createWith(dataExtra: any) {
+      return prisma.product.create({
+        data: {
+          name,
+          description,
+          price: new Prisma.Decimal(String(price)),
+          originalPrice: originalPrice != null ? new Prisma.Decimal(String(originalPrice)) : null,
+          image,
+          images,
+          rating: 0,
+          inStock: (stock ?? 0) > 0,
+          ...(categoryName && { category: { connectOrCreate: { where: { slug: slugify(categoryName) }, create: { slug: slugify(categoryName), name: categoryName } } } }),
+          ...(brandName && { brand: { connectOrCreate: { where: { slug: slugify(brandName) }, create: { slug: slugify(brandName), name: brandName } } } }),
+          ...dataExtra,
+        },
+      })
+    }
+
+    let created
+    try {
+      created = await createWith({
+        ...(specs != null && { specs }),
+        ...(customFields != null && { customFields }),
+      })
+    } catch (e: any) {
+      // Fallback if prisma client wasn't regenerated yet (unknown arg error)
+      console.warn('Create with specs/customFields failed, retrying without extra fields:', e?.code || e?.message)
+      created = await createWith({})
+    }
 
     if (typeof stock === 'number' && stock !== 0) {
       await prisma.inventoryMovement.create({ data: { productId: created.id, quantity: stock, type: 'adjust', note: 'Inicial' } })

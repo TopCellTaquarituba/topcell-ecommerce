@@ -10,7 +10,6 @@ type AdminProduct = { id: string; name: string; price: number; category: string;
 export default function ProductsManagement() {
   const { user } = useAuth()
   const [products, setProducts] = useState<AdminProduct[]>([])
-  const [showAddForm, setShowAddForm] = useState(false)
   const [loading, setLoading] = useState(true)
 
   async function load() {
@@ -30,31 +29,6 @@ export default function ProductsManagement() {
     await load()
   }
 
-  async function handleAddProduct(e: React.FormEvent) {
-    e.preventDefault()
-    const form = e.target as HTMLFormElement
-    const formData = new FormData(form)
-    const payload = {
-      name: String(formData.get('name') || ''),
-      price: Number(formData.get('price') || 0),
-      categoryName: String(formData.get('category') || ''),
-      stock: Number(formData.get('stock') || 0),
-      image: (formData.get('image') as string) || 'https://via.placeholder.com/500',
-      description: '',
-      images: [],
-    }
-    const res = await fetch('/api/products', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-    let msg = ''
-    try { const j = await res.json(); msg = j?.error || '' } catch {}
-    if (!res.ok) {
-      alert('Falha ao salvar: ' + (msg || res.statusText))
-      return
-    }
-    setShowAddForm(false)
-    form.reset()
-    await load()
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <header className="bg-white dark:bg-gray-800 shadow-sm">
@@ -66,10 +40,10 @@ export default function ProductsManagement() {
               </Link>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Gerenciar Produtos</h1>
             </div>
-            <button onClick={() => setShowAddForm(true)} className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition btn-animate">
+            <Link href="/admin/products/new" className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition btn-animate">
               <FiPlus className="w-4 h-4" />
               <span>Adicionar Produto</span>
-            </button>
+            </Link>
           </div>
         </div>
       </header>
@@ -126,48 +100,8 @@ export default function ProductsManagement() {
           </div>
         </div>
 
-        {showAddForm && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 animate-fade-in">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6 animate-scale-in">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Adicionar Novo Produto</h2>
-              <form onSubmit={handleAddProduct} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Nome do Produto</label>
-                  <input type="text" name="name" required className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Categoria</label>
-                  <select name="category" required className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
-                    <option value="Smartphones">Smartphones</option>
-                    <option value="Notebooks">Notebooks</option>
-                    <option value="Acessórios">Acessórios</option>
-                    <option value="Tablets">Tablets</option>
-                  </select>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Preço (R$)</label>
-                    <input type="number" name="price" required step="0.01" className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Estoque</label>
-                    <input type="number" name="stock" required className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">URL da Imagem</label>
-                  <input type="url" name="image" className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
-                </div>
-                <div className="flex space-x-4">
-                  <button type="submit" className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-4 rounded-lg transition">Adicionar Produto</button>
-                  <button type="button" onClick={() => setShowAddForm(false)} className="flex-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-semibold py-3 px-4 rounded-lg transition">Cancelar</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+        {/* O formulário modal foi substituído por uma página dedicada em /admin/products/new */}
       </main>
     </div>
   )
 }
-
