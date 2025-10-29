@@ -82,7 +82,7 @@ function buildDemoData() {
     }
   })
 
-  return { orders }
+  return { orders: [] }
 }
 
 function computeAggregates(orders: any[]) {
@@ -164,24 +164,23 @@ export async function GET(req: NextRequest) {
   try {
     let orders: any[] = []
     let total = 0
+    let customerTotal = 0
+    let statsSource: any[] = []
 
     if (!hasDb) {
-      // Demo fallback
-      const demo = buildDemoData()
-      orders = demo.orders
+      const demo = buildDemoData() as { orders: any[] }
+      statsSource = demo.orders
         .filter((o) => !from || new Date(o.createdAt) >= from)
         .filter((o) => !to || new Date(o.createdAt) <= to!)
         .filter((o) => !statuses || statuses.includes(o.status))
         .filter((o) => !customerId || o.customer?.id === customerId)
         .filter((o) => !minTotal || decimalToNumber(o.total) >= minTotal)
         .filter((o) => !maxTotal || decimalToNumber(o.total) <= maxTotal)
-        .filter((o) =>
-          !categories || o.items?.some((it:any) => categories!.includes(it.product?.category?.name))
-        )
+        .filter((o) => !categories || o.items?.some((it: any) => categories!.includes(it.product?.category?.name)))
         .filter((o) => !q || o.number?.includes(q) || o.customer?.name?.toLowerCase().includes(q.toLowerCase()))
-      total = orders.length
+      total = statsSource.length
       const start = (page - 1) * pageSize
-      orders = orders.slice(start, start + pageSize)
+      orders = statsSource.slice(start, start + pageSize)
     } else {
       const prisma = await getPrisma()
       const where: any = {}
@@ -205,19 +204,31 @@ export async function GET(req: NextRequest) {
       }
 
       total = await prisma.order.count({ where })
-      orders = await prisma.order.findMany({
-        where,
-        include: {
-          customer: true,
-          items: { include: { product: { include: { category: true } } } },
-        },
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-      })
+      const skip = (page - 1) * pageSize
+      const [pageOrders, statsOrders, customerCountValue] = await Promise.all([
+        prisma.order.findMany({
+          where,
+          include: { customer: true },
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: pageSize,
+        }),
+        prisma.order.findMany({
+          where,
+          include: {
+            customer: true,
+            items: { include: { product: { include: { category: true } } } },
+          },
+          orderBy: { createdAt: 'desc' },
+        }),
+        prisma.customer.count(),
+      ])
+      orders = pageOrders
+      statsSource = statsOrders
+      customerTotal = customerCountValue
     }
 
-    const agg = computeAggregates(orders)
+    const agg = computeAggregates(statsSource)
     const normalizedOrders = orders.map((o) => ({
       id: o.id,
       number: o.number ?? o.id,
@@ -227,8 +238,85 @@ export async function GET(req: NextRequest) {
       customer: { id: o.customer?.id ?? '', name: o.customer?.name ?? '' },
     }))
 
-    return NextResponse.json({ ok: true, page, pageSize, total, orders: normalizedOrders, ...agg })
+    return NextResponse.json({ ok: true, page, pageSize, total, customerCount: customerTotal, orders: normalizedOrders, ...agg })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e?.message || 'failed to load orders' }, { status: 500 })
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const prisma = await getPrisma()
+    const body = await req.json()
+    const {
+      customer = {},
+      shipping = {},
+      items = [],
+    } = body || {}
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return NextResponse.json({ ok: false, error: 'items are required' }, { status: 400 })
+    }
+
+    const productIds: string[] = items.map((it: any) => String(it.productId))
+    const products = await prisma.product.findMany({ where: { id: { in: productIds } } })
+    const priceMap = new Map(products.map((p: any) => [p.id, p.price]))
+
+    let total = 0
+    const orderItems = items.map((it: any) => {
+      const price = priceMap.get(String(it.productId))
+      if (!price) throw new Error('Produto inválido: ' + it.productId)
+      const qty = Math.max(1, Number(it.quantity || 1))
+      total += Number(price) * qty
+      return { productId: String(it.productId), quantity: qty, price }
+    })
+
+    // Upsert customer by email if provided; otherwise create a guest customer
+    let customerId: string | undefined = undefined
+    const name = String(customer.name || shipping.name || 'Cliente')
+    const email = customer.email ? String(customer.email) : null
+    const phone = String(customer.phone || shipping.phone || '') || null
+    if (email) {
+      const c = await prisma.customer.upsert({ where: { email }, update: { name, phone: phone || undefined }, create: { name, email, phone } })
+      customerId = c.id
+    } else {
+      const c = await prisma.customer.create({ data: { name, email: null, phone } })
+      customerId = c.id
+    }
+
+    const genNumber = () => {
+      const d = new Date()
+      const y = d.getFullYear().toString().slice(-2)
+      const m = String(d.getMonth() + 1).padStart(2, '0')
+      const s = String(Math.floor(d.getTime() % 100000)).padStart(5, '0')
+      return `${y}${m}${s}`
+    }
+
+    const order = await prisma.order.create({
+      data: {
+        number: genNumber(),
+        status: 'pending',
+        total,
+        customer: { connect: { id: customerId! } },
+        items: { create: orderItems },
+        shippingName: name,
+        shippingEmail: email || undefined,
+        shippingPhone: phone || undefined,
+        shippingZip: shipping.cep || shipping.zip || undefined,
+        shippingAddress: shipping.address || undefined,
+        shippingNumber: shipping.number || undefined,
+        shippingComplement: shipping.complement || undefined,
+        shippingNeighborhood: shipping.neighborhood || undefined,
+        shippingCity: shipping.city || undefined,
+        shippingState: shipping.state || undefined,
+        labelFormat: shipping.labelFormat || 'a4',
+      },
+      include: { items: true },
+    })
+
+    return NextResponse.json({ ok: true, id: order.id, number: order.number })
+  } catch (e: any) {
+    console.error('POST /api/orders error', e)
+    return NextResponse.json({ ok: false, error: e?.message || 'failed to create order' }, { status: 400 })
   }
 }

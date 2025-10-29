@@ -5,25 +5,68 @@ import { useAuth } from '@/context/AuthContext'
 import Link from 'next/link'
 import { FiUsers, FiDollarSign, FiShoppingCart, FiTrendingUp, FiLogOut, FiPackage, FiBarChart2, FiArrowUp, FiArrowDown } from 'react-icons/fi'
 
-// Mock data for dashboard stats
-const mockStats = {
-  totalSales: 245890.50,
-  totalOrders: 1234,
-  totalCustomers: 892,
-  averageOrder: 199.25,
-  salesGrowth: 12.5,
-  ordersGrowth: 8.3,
-  customersGrowth: 15.7
+const initialStats = {
+  totalSales: 0,
+  totalOrders: 0,
+  totalCustomers: 0,
+  averageOrder: 0,
+  salesGrowth: 0,
+  ordersGrowth: 0,
+  customersGrowth: 0,
 }
 
 export default function Dashboard() {
   const { user, logout } = useAuth()
-  const [stats, setStats] = useState(mockStats)
-  const [animatedStats, setAnimatedStats] = useState({
-    sales: 0,
-    orders: 0,
-    customers: 0
-  })
+  const [stats, setStats] = useState(initialStats)
+  const [animatedStats, setAnimatedStats] = useState({ sales: 0, orders: 0, customers: 0 })
+  const [lineData, setLineData] = useState<{ date: string; revenue: number; count: number }[]>([])
+  const [categoryData, setCategoryData] = useState<{ category: string; revenue: number; count: number }[]>([])
+  const [recentOrders, setRecentOrders] = useState<{ id: string; customer: string; total: number; status: string; createdAt: string }[]>([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true)
+      try {
+        const res = await fetch('/api/orders?page=1&pageSize=200', { cache: 'no-store' })
+        if (!res.ok) throw new Error('Falha ao carregar pedidos')
+        const data = await res.json()
+        const summary = data?.summary || {}
+        const revenue = Number(summary.revenue || 0)
+        const ordersCount = Number(summary.count || 0)
+        const averageOrder = Number(summary.avgTicket || (ordersCount > 0 ? revenue / ordersCount : 0))
+        const customers = Number(data?.customerCount || 0)
+
+        setStats({
+          totalSales: revenue,
+          totalOrders: ordersCount,
+          totalCustomers: customers,
+          averageOrder,
+          salesGrowth: 0,
+          ordersGrowth: 0,
+          customersGrowth: 0,
+        })
+        setLineData((data?.byDay || []).slice(-7))
+        setCategoryData(data?.byCategory || [])
+        setRecentOrders((data?.orders || []).slice(0, 5).map((o: any) => ({
+          id: o.number || o.id,
+          customer: o.customer?.name || 'Cliente',
+          total: Number(o.total || 0),
+          status: o.status || 'pending',
+          createdAt: o.createdAt,
+        })))
+      } catch (error) {
+        console.error('Erro ao carregar dados do dashboard', error)
+        setStats(initialStats)
+        setLineData([])
+        setCategoryData([])
+        setRecentOrders([])
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [])
 
   // Animate counters
   useEffect(() => {
@@ -53,48 +96,74 @@ export default function Dashboard() {
     window.location.href = '/admin'
   }
 
+  const formatChange = (value: number) => {
+    if (!value) return '--'
+    const prefix = value > 0 ? '+' : ''
+    return `${prefix}${value.toFixed(1)}%`
+  }
+
+  const getStatusLabel = (status: string) => {
+    const map: Record<string, string> = {
+      pending: 'Pendente',
+      paid: 'Pago',
+      shipped: 'Em trânsito',
+      delivered: 'Entregue',
+      canceled: 'Cancelado',
+    }
+    return map[status] || status
+  }
+
+  const getStatusClasses = (status: string) => {
+    switch (status) {
+      case 'delivered':
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+      case 'paid':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+      case 'shipped':
+        return 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
+      case 'canceled':
+        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+      case 'pending':
+      default:
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+    }
+  }
+
   const statsCards = [
     {
       title: 'Vendas Totais',
       value: `R$ ${animatedStats.sales.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
       icon: FiDollarSign,
       color: 'bg-green-500',
-      change: `+${stats.salesGrowth}%`,
-      positive: true
+      change: formatChange(stats.salesGrowth),
+      positive: stats.salesGrowth >= 0
     },
     {
       title: 'Pedidos',
       value: animatedStats.orders.toLocaleString('pt-BR'),
       icon: FiShoppingCart,
       color: 'bg-blue-500',
-      change: `+${stats.ordersGrowth}%`,
-      positive: true
+      change: formatChange(stats.ordersGrowth),
+      positive: stats.ordersGrowth >= 0
     },
     {
       title: 'Clientes',
       value: animatedStats.customers.toLocaleString('pt-BR'),
       icon: FiUsers,
       color: 'bg-purple-500',
-      change: `+${stats.customersGrowth}%`,
-      positive: true
+      change: formatChange(stats.customersGrowth),
+      positive: stats.customersGrowth >= 0
     },
     {
       title: 'Ticket Médio',
       value: `R$ ${stats.averageOrder.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
       icon: FiTrendingUp,
       color: 'bg-orange-500',
-      change: '+5.2%',
+      change: '--',
       positive: true
     }
   ]
 
-  // Recent orders (mock data)
-  const recentOrders = [
-    { id: '#1234', customer: 'João Silva', product: 'iPhone 15 Pro', amount: 8999, status: 'Entregue' },
-    { id: '#1235', customer: 'Maria Santos', product: 'MacBook Pro', amount: 22999, status: 'Em Trânsito' },
-    { id: '#1236', customer: 'Pedro Costa', product: 'AirPods Pro', amount: 2299, status: 'Processando' },
-    { id: '#1237', customer: 'Ana Oliveira', product: 'Samsung S24', amount: 7499, status: 'Entregue' }
-  ]
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -115,6 +184,13 @@ export default function Dashboard() {
               >
                 <FiPackage className="w-4 h-4" />
                 <span>Produtos</span>
+              </Link>
+              <Link
+                href="/admin/orders"
+                className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition btn-animate"
+              >
+                <FiShoppingCart className="w-4 h-4" />
+                <span>Pedidos</span>
               </Link>
               <Link
                 href="/admin/sales"
@@ -162,10 +238,18 @@ export default function Dashboard() {
                 <div className={`${stat.color} p-3 rounded-lg`}>
                   <stat.icon className="w-6 h-6 text-white" />
                 </div>
-                <span className={`text-sm font-semibold flex items-center ${
-                  stat.positive ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {stat.positive ? <FiArrowUp className="w-4 h-4 mr-1" /> : <FiArrowDown className="w-4 h-4 mr-1" />}
+                <span
+                  className={`text-sm font-semibold flex items-center ${
+                    stat.change === '--'
+                      ? 'text-gray-400 dark:text-gray-500'
+                      : stat.positive
+                        ? 'text-green-600'
+                        : 'text-red-600'
+                  }`}
+                >
+                  {stat.change !== '--' && (
+                    stat.positive ? <FiArrowUp className="w-4 h-4 mr-1" /> : <FiArrowDown className="w-4 h-4 mr-1" />
+                  )}
                   {stat.change}
                 </span>
               </div>
@@ -179,14 +263,49 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Sales Chart */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 animate-fade-in">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Vendas dos Últimos 7 Dias</h2>
-            <SalesLineChart />
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Vendas dos Últimos 7 Dias</h2>
+              {loading && <span className="text-xs text-gray-400">Atualizando...</span>}
+            </div>
+            {lineData.length ? (
+              <ul className="space-y-3">
+                {lineData.map((item, index) => (
+                  <li key={index} className="flex items-center justify-between text-sm text-gray-700 dark:text-gray-300">
+                    <span>{new Date(item.date).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })}</span>
+                    <span className="font-semibold text-gray-900 dark:text-white">
+                      R$ {item.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="text-sm text-gray-500 dark:text-gray-400">Sem dados suficientes.</div>
+            )}
           </div>
 
           {/* Sales by Category */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 animate-fade-in">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Vendas por Categoria</h2>
-            <SalesPieChart />
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Vendas por Categoria</h2>
+              {loading && <span className="text-xs text-gray-400">Atualizando...</span>}
+            </div>
+            {categoryData.length ? (
+              <ul className="space-y-3">
+                {categoryData.map((item, index) => (
+                  <li key={index} className="flex items-center justify-between text-sm text-gray-700 dark:text-gray-300">
+                    <span>{item.category}</span>
+                    <div className="text-right">
+                      <div className="font-semibold text-gray-900 dark:text-white">
+                        R$ {item.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">{item.count} unidades</div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="text-sm text-gray-500 dark:text-gray-400">Sem dados por categoria.</div>
+            )}
           </div>
         </div>
 
@@ -199,11 +318,11 @@ export default function Dashboard() {
             <table className="w-full">
               <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Pedido</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Data</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Cliente</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Produto</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Valor</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Status</th>
+                  <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Total</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -213,28 +332,20 @@ export default function Dashboard() {
                     className="hover:bg-gray-50 dark:hover:bg-gray-700 transition"
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                      {order.id}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">#{order.id}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                      {order.createdAt ? new Date(order.createdAt).toLocaleDateString('pt-BR') : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
                       {order.customer}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                      {order.product}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white">
-                      R$ {order.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        order.status === 'Entregue' 
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                          : order.status === 'Em Trânsito'
-                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                          : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                      }`}>
-                        {order.status}
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusClasses(order.status)}`}>
+                        {getStatusLabel(order.status)}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white text-right">
+                      R$ {order.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </td>
                   </tr>
                 ))}
@@ -247,180 +358,5 @@ export default function Dashboard() {
   )
 }
 
-// Animated Line Chart Component
-function SalesLineChart() {
-  const data = [
-    { day: 'Seg', sales: 32000 },
-    { day: 'Ter', sales: 28000 },
-    { day: 'Qua', sales: 41000 },
-    { day: 'Qui', sales: 35000 },
-    { day: 'Sex', sales: 49000 },
-    { day: 'Sáb', sales: 42000 },
-    { day: 'Dom', sales: 38000 }
-  ]
 
-  const maxSales = Math.max(...data.map(d => d.sales))
-  const width = 400
-  const height = 200
-  const padding = 40
 
-  const points = data.map((item, index) => {
-    const x = padding + (index * (width - 2 * padding) / (data.length - 1))
-    const y = height - padding - (item.sales / maxSales) * (height - 2 * padding)
-    return { x, y, sales: item.sales, day: item.day }
-  })
-
-  const pathData = points.map((point, index) => 
-    `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`
-  ).join(' ')
-
-  const areaPathData = `${pathData} L ${points[points.length - 1].x} ${height - padding} L ${padding} ${height - padding} Z`
-
-  return (
-    <div className="relative">
-      <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
-        {/* Grid lines */}
-        {[0, 25, 50, 75, 100].map((percent) => (
-          <line
-            key={percent}
-            x1={padding}
-            y1={padding + ((100 - percent) / 100) * (height - 2 * padding)}
-            x2={width - padding}
-            y2={padding + ((100 - percent) / 100) * (height - 2 * padding)}
-            stroke="#e5e7eb"
-            strokeWidth="1"
-            className="dark:stroke-gray-600"
-          />
-        ))}
-        
-        {/* Area fill */}
-        <path
-          d={areaPathData}
-          fill="url(#gradient)"
-          opacity="0.3"
-          className="animate-fade-in"
-          style={{ animationDelay: '300ms' }}
-        />
-        
-        {/* Line */}
-        <path
-          d={pathData}
-          fill="none"
-          stroke="#0ea5e9"
-          strokeWidth="3"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="animate-slide-in"
-        />
-
-        {/* Gradient definition */}
-        <defs>
-          <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#0ea5e9" />
-            <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-
-        {/* Points */}
-        {points.map((point, index) => (
-          <g key={index}>
-            <circle
-              cx={point.x}
-              cy={point.y}
-              r="5"
-              fill="#0ea5e9"
-              className="animate-scale-in"
-              style={{ animationDelay: `${index * 100}ms` }}
-            />
-            <text
-              x={point.x}
-              y={height - padding + 20}
-              textAnchor="middle"
-              className="text-xs fill-gray-600 dark:fill-gray-400"
-            >
-              {point.day}
-            </text>
-          </g>
-        ))}
-      </svg>
-    </div>
-  )
-}
-
-// Animated Pie Chart Component
-function SalesPieChart() {
-  const data = [
-    { category: 'Smartphones', value: 523450, color: '#10b981' },
-    { category: 'Notebooks', value: 398200, color: '#0ea5e9' },
-    { category: 'Acessórios', value: 156890, color: '#f59e0b' },
-    { category: 'Tablets', value: 164830, color: '#8b5cf6' }
-  ]
-
-  const total = data.reduce((sum, item) => sum + item.value, 0)
-  let currentAngle = 0
-
-  return (
-    <div className="relative">
-      <svg width="300" height="300" viewBox="0 0 300 300" className="mx-auto">
-        {data.map((item, index) => {
-          const percentage = (item.value / total) * 100
-          const angle = (item.value / total) * 360
-          const startAngle = currentAngle
-          const endAngle = currentAngle + angle
-          
-          const x1 = 150 + 100 * Math.cos((startAngle - 90) * Math.PI / 180)
-          const y1 = 150 + 100 * Math.sin((startAngle - 90) * Math.PI / 180)
-          const x2 = 150 + 100 * Math.cos((endAngle - 90) * Math.PI / 180)
-          const y2 = 150 + 100 * Math.sin((endAngle - 90) * Math.PI / 180)
-          
-          const largeArc = angle > 180 ? 1 : 0
-          const pathData = `M 150 150 L ${x1} ${y1} A 100 100 0 ${largeArc} 1 ${x2} ${y2} Z`
-          
-          currentAngle = endAngle
-
-          return (
-            <path
-              key={index}
-              d={pathData}
-              fill={item.color}
-              className="animate-scale-in"
-              style={{ 
-                animationDelay: `${index * 100}ms`,
-                transformOrigin: '150px 150px'
-              }}
-            />
-          )
-        })}
-      </svg>
-
-      {/* Legend */}
-      <div className="mt-6 space-y-2">
-        {data.map((item, index) => (
-          <div 
-            key={index} 
-            className="flex items-center justify-between animate-slide-up"
-            style={{ animationDelay: `${index * 50}ms` }}
-          >
-            <div className="flex items-center space-x-2">
-              <div 
-                className="w-4 h-4 rounded-full" 
-                style={{ backgroundColor: item.color }}
-              />
-              <span className="text-sm text-gray-700 dark:text-gray-300">
-                {item.category}
-              </span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                R$ {item.value.toLocaleString('pt-BR')}
-              </span>
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                ({((item.value / total) * 100).toFixed(1)}%)
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}

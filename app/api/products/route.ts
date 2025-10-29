@@ -8,6 +8,13 @@ function parseNumber(v: any) {
   return Number.isFinite(n) ? n : undefined
 }
 
+function parseBoolean(v: any) {
+  if (typeof v === 'boolean') return v
+  if (typeof v === 'string') return ['true', '1', 'on', 'yes', 'sim'].includes(v.toLowerCase())
+  if (typeof v === 'number') return v !== 0
+  return false
+}
+
 export async function GET(req: NextRequest) {
   try {
     const prisma = await getPrisma()
@@ -55,6 +62,7 @@ export async function GET(req: NextRequest) {
       brand: p.brand?.name || '',
       rating: p.rating || 0,
       inStock: p.inStock,
+      featured: p.featured,
       stock: stockMap.get(p.id) || 0,
       createdAt: p.createdAt,
     }))
@@ -70,7 +78,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const prisma = await getPrisma()
-    const { name, description = '', price, originalPrice, image = '', images = [], categoryName, brandName, stock, specs, customFields } = body
+    const { name, description = '', price, originalPrice, image = '', images = [], categoryName, brandName, stock, specs, customFields, featured } = body
     if (!name || price == null) return NextResponse.json({ ok: false, error: 'name and price are required' }, { status: 400 })
 
     const createWith = async (dataExtra: any) => {
@@ -84,6 +92,7 @@ export async function POST(req: NextRequest) {
           images,
           rating: 0,
           inStock: (stock ?? 0) > 0,
+          featured: parseBoolean(featured),
           ...(categoryName && { category: { connectOrCreate: { where: { slug: slugify(categoryName) }, create: { slug: slugify(categoryName), name: categoryName } } } }),
           ...(brandName && { brand: { connectOrCreate: { where: { slug: slugify(brandName) }, create: { slug: slugify(brandName), name: brandName } } } }),
           ...dataExtra,

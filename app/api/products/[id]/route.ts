@@ -3,6 +3,13 @@ export const runtime = 'nodejs'
 import { Prisma } from '@prisma/client'
 import { getPrisma } from '@/lib/prisma'
 
+function parseBoolean(v: any) {
+  if (typeof v === 'boolean') return v
+  if (typeof v === 'string') return ['true', '1', 'on', 'yes', 'sim'].includes(v.toLowerCase())
+  if (typeof v === 'number') return v !== 0
+  return false
+}
+
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const prisma = await getPrisma()
   const p = await prisma.product.findUnique({ where: { id: params.id }, include: { category: true, brand: true, reviews: true } })
@@ -23,6 +30,17 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       brand: p.brand?.name || '',
       rating: p.rating || 0,
       inStock: p.inStock,
+      featured: p.featured,
+      specs: Array.isArray(p.specs)
+        ? p.specs
+        : p.specs && typeof p.specs === 'object'
+          ? Object.entries(p.specs).map(([key, value]) => ({ key, value }))
+          : [],
+      customFields: Array.isArray(p.customFields)
+        ? p.customFields
+        : p.customFields && typeof p.customFields === 'object'
+          ? Object.entries(p.customFields).map(([key, value]) => ({ key, value }))
+          : [],
       stock: mv._sum.quantity || 0,
       createdAt: p.createdAt,
       reviews: (p.reviews || []).map((r: any) => ({
@@ -45,7 +63,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   try {
     const body = await req.json()
     const prisma = await getPrisma()
-    const { name, description, price, originalPrice, image, images, categoryName, brandName, stock, specs, customFields } = body
+    const { name, description, price, originalPrice, image, images, categoryName, brandName, stock, specs, customFields, featured } = body
     const updateWith = async (dataExtra: any) => {
       return prisma.product.update({
         where: { id: params.id },
@@ -59,6 +77,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
           ...(categoryName && { category: { connectOrCreate: { where: { slug: slugify(categoryName) }, create: { slug: slugify(categoryName), name: categoryName } } } }),
           ...(brandName && { brand: { connectOrCreate: { where: { slug: slugify(brandName) }, create: { slug: slugify(brandName), name: brandName } } } }),
           ...(stock != null && { inStock: Number(stock) > 0 }),
+          ...(featured !== undefined && { featured: parseBoolean(featured) }),
           ...dataExtra,
         },
       })

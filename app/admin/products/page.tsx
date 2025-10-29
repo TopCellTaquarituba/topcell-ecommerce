@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import Link from 'next/link'
 import { FiArrowLeft, FiPlus, FiEdit2, FiTrash2 } from 'react-icons/fi'
+import { useRouter } from 'next/navigation'
 
 type AdminProduct = { id: string; name: string; price: number; category: string; stock: number; image: string }
 
@@ -11,6 +12,7 @@ export default function ProductsManagement() {
   const { user } = useAuth()
   const [products, setProducts] = useState<AdminProduct[]>([])
   const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
   async function load() {
     setLoading(true)
@@ -25,8 +27,21 @@ export default function ProductsManagement() {
 
   async function handleDelete(id: string) {
     if (!confirm('Tem certeza que deseja deletar este produto?')) return
-    await fetch(`/api/products/${id}`, { method: 'DELETE' })
-    await load()
+    try {
+      const res = await fetch(`/api/products/${id}`, { method: 'DELETE' })
+      if (!res.ok) {
+        let message = res.statusText
+        try {
+          const data = await res.json()
+          if (data?.error) message = data.error
+        } catch {}
+        alert('Falha ao excluir: ' + message)
+        return
+      }
+      await load()
+    } catch (e: any) {
+      alert('Erro ao excluir: ' + (e?.message || 'desconhecido'))
+    }
   }
 
   return (
@@ -85,7 +100,11 @@ export default function ProductsManagement() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <div className="flex items-center space-x-2">
-                        <button className="text-blue-600 hover:text-blue-800 transition" title="Editar (em breve)">
+                        <button
+                          onClick={() => router.push(`/admin/products/${product.id}/edit`)}
+                          className="text-blue-600 hover:text-blue-800 transition"
+                          title="Editar"
+                        >
                           <FiEdit2 className="w-5 h-5" />
                         </button>
                         <button onClick={() => handleDelete(product.id)} className="text-red-600 hover:text-red-800 transition">

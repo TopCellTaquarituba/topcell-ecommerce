@@ -39,6 +39,7 @@ export default function NewProductPage() {
         .filter(Boolean),
       specs: specs.filter((r) => r.key && r.value),
       customFields: customFields.filter((r) => r.key && r.value),
+      featured: fd.get('featured') === 'on',
     }
     try {
       const res = await fetch('/api/products', {
@@ -122,6 +123,10 @@ export default function NewProductPage() {
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Descrição</label>
                 <textarea name="description" rows={6} placeholder="Detalhes do produto, acessórios, garantia, política de troca, etc." className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
               </div>
+              <div className="md:col-span-2 flex items-center gap-2">
+                <input type="checkbox" name="featured" id="featured" className="h-4 w-4" />
+                <label htmlFor="featured" className="text-sm font-semibold text-gray-700 dark:text-gray-300">Marcar como produto destaque</label>
+              </div>
             </div>
           </section>
 
@@ -168,4 +173,3 @@ export default function NewProductPage() {
     </div>
   )
 }
-

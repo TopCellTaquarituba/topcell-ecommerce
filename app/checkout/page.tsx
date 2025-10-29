@@ -52,18 +52,42 @@ export default function CheckoutPage() {
     })
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (step === 'shipping') {
       setStep('payment')
-    } else if (step === 'payment') {
+      return
+    }
+    if (step === 'payment') {
       setStep('review')
-    } else {
-      // Generate order ID
-      const orderId = `PED-${Date.now()}`
-      localStorage.setItem('lastOrderId', orderId)
+      return
+    }
+    // Create order in backend and redirect to tracking
+    try {
+      const payload = {
+        customer: { name: formData.name, email: formData.email, phone: formData.phone },
+        shipping: {
+          name: formData.name,
+          phone: formData.phone,
+          cep: formData.cep,
+          address: formData.address,
+          number: formData.number,
+          complement: formData.complement,
+          neighborhood: formData.neighborhood,
+          city: formData.city,
+          state: formData.state,
+        },
+        items: items.map((it) => ({ productId: it.id, quantity: it.quantity })),
+      }
+      const res = await fetch('/api/orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || 'Falha ao criar pedido')
+      const orderId = data.id as string
+      localStorage.setItem('lastOrderId', data.number || orderId)
       clearCart()
       router.push(`/order/${orderId}`)
+    } catch (err: any) {
+      alert('Falha ao finalizar: ' + (err?.message || 'Erro desconhecido'))
     }
   }
 
