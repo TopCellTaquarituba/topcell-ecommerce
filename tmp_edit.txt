@@ -21,11 +21,6 @@ type ProductResponse = {
     brand: string
     stock: number
     featured?: boolean
-    weightGrams?: number | null
-    lengthCm?: number | null
-    heightCm?: number | null
-    widthCm?: number | null
-    diameterCm?: number | null
     specs?: any
     customFields?: any
   }
@@ -66,11 +61,6 @@ export default function EditProductPage() {
     images: '',
     description: '',
     featured: false,
-    weightGrams: '',
-    lengthCm: '',
-    heightCm: '',
-    widthCm: '',
-    diameterCm: '',
   })
 
   const addRow = (setter: React.Dispatch<React.SetStateAction<KV[]>>) => setter((arr) => [...arr, { key: '', value: '' }])
@@ -99,11 +89,6 @@ export default function EditProductPage() {
           images: Array.isArray(item.images) ? item.images.join('\n') : '',
           description: item.description || '',
           featured: Boolean(item.featured),
-          weightGrams: item.weightGrams != null ? String(item.weightGrams) : '',
-          lengthCm: item.lengthCm != null ? String(item.lengthCm) : '',
-          heightCm: item.heightCm != null ? String(item.heightCm) : '',
-          widthCm: item.widthCm != null ? String(item.widthCm) : '',
-          diameterCm: item.diameterCm != null ? String(item.diameterCm) : '',
         })
         setSpecs(toPairs(item.specs))
         setCustomFields(toPairs(item.customFields))
@@ -165,11 +150,6 @@ export default function EditProductPage() {
         specs: fromPairs(specs.filter((row) => row.key && row.value)),
         customFields: fromPairs(customFields.filter((row) => row.key && row.value)),
         featured: form.featured,
-        weightGrams: form.weightGrams ? Number(form.weightGrams) : null,
-        lengthCm: form.lengthCm ? Number(form.lengthCm) : null,
-        heightCm: form.heightCm ? Number(form.heightCm) : null,
-        widthCm: form.widthCm ? Number(form.widthCm) : null,
-        diameterCm: form.diameterCm ? Number(form.diameterCm) : null,
       }
       const res = await fetch(`/api/products/${productId}`, {
         method: 'PUT',
@@ -239,28 +219,6 @@ export default function EditProductPage() {
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Estoque</label>
                   <input type="number" name="stock" value={form.stock} onChange={handleInputChange} required className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
-                </div>
-                <div className="md:col-span-2 grid grid-cols-2 md:grid-cols-5 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Peso (g)</label>
-                    <input type="number" min={0} name="weightGrams" value={form.weightGrams} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Comprimento (cm)</label>
-                    <input type="number" min={0} name="lengthCm" value={form.lengthCm} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Altura (cm)</label>
-                    <input type="number" min={0} name="heightCm" value={form.heightCm} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Largura (cm)</label>
-                    <input type="number" min={0} name="widthCm" value={form.widthCm} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Diâmetro (cm)</label>
-                    <input type="number" min={0} name="diameterCm" value={form.diameterCm} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
-                  </div>
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">URL da imagem principal</label>

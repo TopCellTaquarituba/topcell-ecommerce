@@ -37,6 +37,12 @@ model Product {
   originalPrice Decimal? @db.Decimal(12, 2)
   image         String
   images        String[]
+  // Shipping dimensions (Correios)
+  weightGrams   Int?
+  lengthCm      Int?
+  heightCm      Int?
+  widthCm       Int?
+  diameterCm    Int?
   // ML-style details
   specs         Json?
   customFields  Json?

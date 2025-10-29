@@ -156,9 +156,9 @@ export default function SalesAdminPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="flex flex-wrap gap-2">
               {([
-                { k: '7d', label: 'Ãšltimos 7 dias' },
-                { k: '30d', label: 'Ãšltimos 30 dias' },
-                { k: 'month', label: 'Este mÃªs' },
+                { k: '7d', label: 'ÃÂltimos 7 dias' },
+                { k: '30d', label: 'ÃÂltimos 30 dias' },
+                { k: 'month', label: 'Este mÃÂªs' },
                 { k: 'custom', label: 'Personalizado' },
               ] as const).map((p) => (
                 <button
@@ -175,7 +175,7 @@ export default function SalesAdminPage() {
                 <input type="date" value={from} onChange={(e)=>{ setFrom(e.target.value); setPreset('custom') }} className="w-full input" />
               </div>
               <div className="flex-1">
-                <label className="block text-xs mb-1">AtÃ©</label>
+                <label className="block text-xs mb-1">AtÃÂ©</label>
                 <input type="date" value={to} onChange={(e)=>{ setTo(e.target.value); setPreset('custom') }} className="w-full input" />
               </div>
             </div>
@@ -191,15 +191,15 @@ export default function SalesAdminPage() {
                 <input value={category} onChange={(e)=> setCategory(e.target.value)} placeholder="ex: Smartphones" className="w-full input" />
               </div>
               <div>
-                <label className="block text-xs mb-1">Busca (nÂº ou cliente)</label>
+                <label className="block text-xs mb-1">Busca (nÃÂº ou cliente)</label>
                 <input value={q} onChange={(e)=> setQ(e.target.value)} className="w-full input" />
               </div>
               <div>
-                <label className="block text-xs mb-1">MÃ­n. (R$)</label>
+                <label className="block text-xs mb-1">MÃÂ­n. (R$)</label>
                 <input value={minTotal} onChange={(e)=> setMinTotal(e.target.value)} className="w-full input" inputMode="numeric" />
               </div>
               <div>
-                <label className="block text-xs mb-1">MÃ¡x. (R$)</label>
+                <label className="block text-xs mb-1">MÃÂ¡x. (R$)</label>
                 <input value={maxTotal} onChange={(e)=> setMaxTotal(e.target.value)} className="w-full input" inputMode="numeric" />
               </div>
             </div>
@@ -217,7 +217,7 @@ export default function SalesAdminPage() {
             <div className="text-2xl font-bold text-gray-900 dark:text-white">{data?.summary.count || 0}</div>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-            <div className="text-sm text-gray-500 dark:text-gray-400">Ticket mÃ©dio</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">Ticket mÃÂ©dio</div>
             <div className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(data?.summary.avgTicket || 0)}</div>
           </div>
         </div>
@@ -238,7 +238,7 @@ export default function SalesAdminPage() {
             <table className="w-full">
               <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-semibold">NÃºmero</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold">NÃÂºmero</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold">Data</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold">Cliente</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold">Status</th>
@@ -265,12 +265,12 @@ export default function SalesAdminPage() {
           </div>
           {/* Pagination */}
           <div className="px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 text-sm">
-            <div>Pag. {page} de {totalPages}</div>
+            <div>PÃ¡g. {page} de {totalPages}</div>
             <div className="flex items-center gap-2">
               <button disabled={page<=1} onClick={()=> setPage((p)=> Math.max(1, p-1))} className="px-3 py-1 rounded border border-gray-300 dark:border-gray-600 disabled:opacity-50">Anterior</button>
               <button disabled={page>=totalPages} onClick={()=> setPage((p)=> Math.min(totalPages, p+1))} className="px-3 py-1 rounded border border-gray-300 dark:border-gray-600 disabled:opacity-50">PrÃ³xima</button>
               <select value={pageSize} onChange={(e)=> { setPageSize(Number(e.target.value)); setPage(1) }} className="ml-2 input">
-                {[10,20,50,100].map(n=> <option key={n} value={n}>{n}/pÃ¡gina</option>)}
+                {[10,20,50,100].map(n=> <option key={n} value={n}>{n}/pÃÂ¡gina</option>)}
               </select>
             </div>
           </div>
@@ -311,7 +311,7 @@ function SalesBars({ data }: { data: { date: string; revenue: number; count: num
         const h = Math.max(4, Math.round((d.revenue / max) * 160))
         return (
           <div key={i} className="flex flex-col items-center">
-            <div className="bg-gradient-to-t from-primary-600 to-primary-400 w-6 rounded-t" style={{ height: h }} title={`${d.date} â€¢ ${formatCurrency(d.revenue)}`}></div>
+            <div className="bg-gradient-to-t from-primary-600 to-primary-400 w-6 rounded-t" style={{ height: h }} title={`${d.date} Ã¢ÂÂ¢ ${formatCurrency(d.revenue)}`}></div>
             <div className="text-[10px] mt-1 text-gray-600 dark:text-gray-300">{new Date(d.date).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' })}</div>
           </div>
         )
@@ -370,4 +370,5 @@ function StatusMultiSelect({ value, onChange }: { value: string[]; onChange: (v:
     </div>
   )
 }
+
 

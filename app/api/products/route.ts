@@ -78,7 +78,8 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const prisma = await getPrisma()
-    const { name, description = '', price, originalPrice, image = '', images = [], categoryName, brandName, stock, specs, customFields, featured } = body
+    const { name, description = '', price, originalPrice, image = '', images = [], categoryName, brandName, stock, specs, customFields, featured,
+      weightGrams, lengthCm, heightCm, widthCm, diameterCm } = body
     if (!name || price == null) return NextResponse.json({ ok: false, error: 'name and price are required' }, { status: 400 })
 
     const createWith = async (dataExtra: any) => {
@@ -93,6 +94,11 @@ export async function POST(req: NextRequest) {
           rating: 0,
           inStock: (stock ?? 0) > 0,
           featured: parseBoolean(featured),
+          ...(weightGrams != null && { weightGrams: Number(weightGrams) }),
+          ...(lengthCm != null && { lengthCm: Number(lengthCm) }),
+          ...(heightCm != null && { heightCm: Number(heightCm) }),
+          ...(widthCm != null && { widthCm: Number(widthCm) }),
+          ...(diameterCm != null && { diameterCm: Number(diameterCm) }),
           ...(categoryName && { category: { connectOrCreate: { where: { slug: slugify(categoryName) }, create: { slug: slugify(categoryName), name: categoryName } } } }),
           ...(brandName && { brand: { connectOrCreate: { where: { slug: slugify(brandName) }, create: { slug: slugify(brandName), name: brandName } } } }),
           ...dataExtra,

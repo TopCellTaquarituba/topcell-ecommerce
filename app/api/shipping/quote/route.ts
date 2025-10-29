@@ -1,0 +1,103 @@
+import { NextRequest, NextResponse } from 'next/server'
+export const runtime = 'nodejs'
+import { getPrisma } from '@/lib/prisma'
+
+type ItemInput = { productId: string; quantity?: number }
+
+function clamp(n: number, min: number, max: number) { return Math.max(min, Math.min(max, n)) }
+
+// Correios limits (2025, aproximados e compatíveis com CalcPrecoPrazo)
+const MIN = { length: 16, height: 2, width: 11, diameter: 5, weightKg: 0.3 }
+const MAX = { length: 100, height: 100, width: 100, diameter: 91, sumDims: 200, weightKg: 30 }
+
+function toKg(grams?: number | null) { return Math.max(MIN.weightKg, (grams ?? 0) / 1000) }
+
+function buildPackage(items: { weightGrams?: number | null, lengthCm?: number | null, heightCm?: number | null, widthCm?: number | null, diameterCm?: number | null, qty: number }[]) {
+  // Simple packing heuristic: sum length, take max width/height, sum weight
+  let weightKg = 0
+  let length = 0
+  let width = 0
+  let height = 0
+  let diameter = 0
+  for (const it of items) {
+    const q = Math.max(1, it.qty)
+    weightKg += toKg(it.weightGrams) * q
+    length += (it.lengthCm ?? 0) * q
+    width = Math.max(width, it.widthCm ?? 0)
+    height = Math.max(height, it.heightCm ?? 0)
+    diameter = Math.max(diameter, it.diameterCm ?? 0)
+  }
+  // Packaging buffer + clamp to Correios limits
+  length = clamp(Math.ceil(length + 2), MIN.length, MAX.length)
+  width = clamp(Math.ceil(width + 2), MIN.width, MAX.width)
+  height = clamp(Math.ceil(height + 2), MIN.height, MAX.height)
+  diameter = clamp(Math.ceil(Math.max(diameter, 0)), MIN.diameter, MAX.diameter)
+  const sum = length + width + height
+  if (sum > MAX.sumDims) {
+    // Reduce length to fit sum constraint
+    const excess = sum - MAX.sumDims
+    length = Math.max(MIN.length, length - excess)
+  }
+  weightKg = clamp(weightKg, MIN.weightKg, MAX.weightKg)
+  return { weightKg, length, width, height, diameter }
+}
+
+async function correiosQuote(params: { origem: string, destino: string, weightKg: number, length: number, height: number, width: number, diameter: number, value?: number }) {
+  const services = ['04014','04510'] // SEDEX, PAC
+  const qs = new URLSearchParams({
+    sCepOrigem: params.origem.replace(/\D/g, ''),
+    sCepDestino: params.destino.replace(/\D/g, ''),
+    nVlPeso: params.weightKg.toFixed(3).replace(',', '.'),
+    nCdFormato: '1',
+    nVlComprimento: String(params.length),
+    nVlAltura: String(params.height),
+    nVlLargura: String(params.width),
+    nVlDiametro: String(params.diameter),
+    sCdMaoPropria: 'N',
+    nVlValorDeclarado: String(Math.max(0, Math.min(10000, Number(params.value || 0)))),
+    sCdAvisoRecebimento: 'N',
+    nCdServico: services.join(','),
+    StrRetorno: 'xml',
+  })
+  const url = `https://ws.correios.com.br/calculador/CalcPrecoPrazo.asmx/CalcPrecoPrazo?${qs.toString()}`
+  const res = await fetch(url)
+  const xml = await res.text()
+  // Very small XML parser for <cServico> entries
+  const out: any[] = []
+  const servMatches = xml.match(/<cServico>[\s\S]*?<\/cServico>/g) || []
+  for (const block of servMatches) {
+    const get = (tag: string) => (block.match(new RegExp(`<${tag}>([\s\S]*?)<\/${tag}>`)) || [])[1] || ''
+    const code = get('Codigo')
+    const price = Number((get('Valor') || '0').replace(/\./g, '').replace(',', '.'))
+    const prazo = Number(get('PrazoEntrega') || '0')
+    const error = get('Erro')
+    const msg = get('MsgErro')
+    out.push({ code, price, deadlineDays: prazo, error, message: msg })
+  }
+  return out
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json().catch(() => ({})) as { items?: ItemInput[]; destinationZip?: string; declaredValue?: number }
+    const destinationZip = String(body.destinationZip || '').trim()
+    if (!destinationZip) return NextResponse.json({ ok: false, error: 'destinationZip é obrigatório' }, { status: 400 })
+    const items = (body.items || []).filter((i) => i && i.productId)
+    if (!items.length) return NextResponse.json({ ok: false, error: 'items vazio' }, { status: 400 })
+    const prisma = await getPrisma()
+    const products = await prisma.product.findMany({ where: { id: { in: items.map(i => i.productId) } } })
+    const enriched = items.map((i) => {
+      const p = products.find((pp) => pp.id === i.productId)
+      return { qty: Math.max(1, Number(i.quantity || 1)), weightGrams: p?.weightGrams, lengthCm: p?.lengthCm, heightCm: p?.heightCm, widthCm: p?.widthCm, diameterCm: p?.diameterCm }
+    })
+    const pkg = buildPackage(enriched)
+    const origem = (process.env.ORIGIN_CEP || process.env.CEP_ORIGEM || '').replace(/\D/g, '')
+    if (!origem) return NextResponse.json({ ok: false, error: 'Defina ORIGIN_CEP no ambiente' }, { status: 500 })
+    const quotes = await correiosQuote({ origem, destino: destinationZip, weightKg: pkg.weightKg, length: pkg.length, height: pkg.height, width: pkg.width, diameter: pkg.diameter, value: body.declaredValue || 0 })
+    return NextResponse.json({ ok: true, package: pkg, quotes })
+  } catch (e: any) {
+    console.error('POST /api/shipping/quote', e)
+    return NextResponse.json({ ok: false, error: e?.message || 'failed' }, { status: 500 })
+  }
+}
+

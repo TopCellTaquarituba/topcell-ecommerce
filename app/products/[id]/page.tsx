@@ -16,6 +16,9 @@ export default function ProductDetailPage() {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [reviews, setReviews] = useState<Review[]>([])
   const [showPayments, setShowPayments] = useState(false)
+  const [zip, setZip] = useState('')
+  const [shipping, setShipping] = useState<{ package?: any; quotes?: any[] } | null>(null)
+  const [shippingLoading, setShippingLoading] = useState(false)
 
   const [product, setProduct] = useState<any | null>(null)
 
@@ -25,6 +28,13 @@ export default function ProductDetailPage() {
       if (res.ok) {
         const json = await res.json()
         const p = json.item
+        const specsObj = Array.isArray(p?.specs)
+          ? Object.fromEntries(
+              (p.specs as any[])
+                .filter((s: any) => s && typeof s.key === 'string')
+                .map((s: any) => [String(s.key), s.value])
+            )
+          : (p?.specs && typeof p.specs === 'object' ? p.specs : {})
         setProduct({
           id: p.id,
           name: p.name,
@@ -35,7 +45,7 @@ export default function ProductDetailPage() {
           category: p.category || '',
           rating: p.rating || 0,
           description: p.description || '',
-          specifications: {},
+          specifications: specsObj,
         })
       } else {
         setProduct(null)
@@ -54,7 +64,7 @@ export default function ProductDetailPage() {
   if (!product) {
     return (
       <div className="container-custom py-20 text-center">
-        <h1 className="text-3xl font-bold mb-4">Produto nÃƒÂ£o encontrado</h1>
+        <h1 className="text-3xl font-bold mb-4">Produto não encontrado</h1>
         <Link href="/products" className="text-primary-600 hover:underline">
           Voltar para a lista de produtos
         </Link>
@@ -84,6 +94,25 @@ export default function ProductDetailPage() {
     router.push('/checkout')
   }
 
+  const handleCalcShipping = async () => {
+    if (!zip || !product) return
+    setShippingLoading(true)
+    try {
+      const res = await fetch('/api/shipping/quote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ destinationZip: zip, items: [{ productId: product.id, quantity }], declaredValue: product.price * quantity }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || !data?.ok) throw new Error(data?.error || 'Falha no cálculo')
+      setShipping({ package: data.package, quotes: data.quotes })
+    } catch (e) {
+      setShipping(null)
+    } finally {
+      setShippingLoading(false)
+    }
+  }
+
   const handleAddReview = (newReview: Omit<Review, 'id' | 'date' | 'helpful'>) => {
     const review: Review = {
       ...newReview,
@@ -107,7 +136,7 @@ export default function ProductDetailPage() {
     <div className="container-custom py-6">
       {/* Breadcrumb */}
       <nav className="text-sm text-gray-600 dark:text-gray-400 mb-8">
-        <Link href="/" className="hover:text-primary-600">InÃƒÂ­cio</Link>
+        <Link href="/" className="hover:text-primary-600">Início</Link>
         {' / '}
         <Link href="/products" className="hover:text-primary-600">Produtos</Link>
         {' / '}
@@ -154,16 +183,16 @@ export default function ProductDetailPage() {
                   />
                 ))}
               </div>
-              <span className="text-gray-600 dark:text-gray-400">{averageRating.toFixed(1)} â€¢ {reviews.length} avaliaÃ§Ãµes</span>
+              <span className="text-gray-600 dark:text-gray-400">{averageRating.toFixed(1)} • {reviews.length} avaliações</span>
             </div>
           </div>
 
           {/* Description & Characteristics */}
           <div className="mt-8">
-            <h3 className="text-xl font-bold mb-3 dark:text-white">DescriÃ§Ã£o</h3>
+            <h3 className="text-xl font-bold mb-3 dark:text-white">Descrição</h3>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{product.description}</p>
 
-            <h3 className="text-xl font-bold mt-8 mb-3 dark:text-white">CaracterÃ­sticas</h3>
+            <h3 className="text-xl font-bold mt-8 mb-3 dark:text-white">Características</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {Object.entries(product.specifications || {}).map(([key, value]) => (
                 <div key={key} className="border border-gray-200 dark:border-gray-700 rounded p-3">
@@ -196,7 +225,7 @@ export default function ProductDetailPage() {
                 )}
               </div>
               {/* Installments + payment methods */}
-              <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Em atÃ© 10x sem juros</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Em até 10x sem juros</div>
               <button
                 type="button"
                 onClick={() => setShowPayments((v) => !v)}
@@ -216,7 +245,7 @@ export default function ProductDetailPage() {
                     </div>
                     {/* Boleto */}
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-700 dark:text-gray-300">Boleto bancÃ¡rio (Ã  vista)</span>
+                      <span className="text-gray-700 dark:text-gray-300">Boleto bancário (à vista)</span>
                       <span className="font-semibold text-gray-900 dark:text-white">
                         R$ {product.price.toFixed(2).replace('.', ',')}
                       </span>
@@ -224,7 +253,7 @@ export default function ProductDetailPage() {
                     {/* CartÃµes */}
                     <div>
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-700 dark:text-gray-300">CartÃ£o de crÃ©dito</span>
+                        <span className="text-gray-700 dark:text-gray-300">Cartão de crédito</span>
                         <span className="font-semibold text-gray-900 dark:text-white">
                           10x de R$ {(product.price / 10).toFixed(2).replace('.', ',')} sem juros
                         </span>
@@ -238,15 +267,37 @@ export default function ProductDetailPage() {
                   </div>
                 </div>
               )}
+              {/* Shipping calc */}
+              <div className="mb-6">
+                <label className="block text-sm font-semibold mb-2 dark:text-white">Calcular frete</label>
+                <div className="flex gap-2">
+                  <input value={zip} onChange={(e)=> setZip(e.target.value)} placeholder="CEP" className="flex-1 px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100" />
+                  <button type="button" onClick={handleCalcShipping} disabled={shippingLoading || !zip} className="px-4 py-2 rounded-lg bg-primary-600 text-white disabled:opacity-60">{shippingLoading ? 'Calculando...' : 'Calcular'}</button>
+                </div>
+                {shipping?.quotes && (
+                  <div className="mt-3 space-y-2 text-sm">
+                    {shipping.quotes.map((q: any) => (
+                      <div key={q.code} className="flex items-center justify-between p-2 rounded border border-gray-200 dark:border-gray-700">
+                        <span className="text-gray-700 dark:text-gray-300">{q.code === '04014' ? 'SEDEX' : q.code === '04510' ? 'PAC' : q.code}</span>
+                        {q.error && q.error !== '0' ? (
+                          <span className="text-red-600 text-xs">{q.message || 'erro'}</span>
+                        ) : (
+                          <span className="font-semibold text-gray-900 dark:text-white">R$ {Number(q.price||0).toFixed(2).replace('.', ',')} • {q.deadlineDays} dias</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               {/* Shipping / returns */}
               <div className="space-y-2 mb-6">
                 <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                   <FiTruck className="w-5 h-5 text-primary-600" />
-                  <span>Frete grÃ¡tis para a sua regiÃ£o</span>
+                  <span>Frete grátis para a sua região</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                   <FiShield className="w-5 h-5 text-primary-600" />
-                  <span>DevoluÃ§Ã£o grÃ¡tis em atÃ© 30 dias</span>
+                  <span>Devolução grátis em até 30 dias</span>
                 </div>
               </div>
               {/* Quantity */}

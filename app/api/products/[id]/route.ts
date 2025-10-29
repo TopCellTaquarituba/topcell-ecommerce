@@ -31,6 +31,11 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       rating: p.rating || 0,
       inStock: p.inStock,
       featured: p.featured,
+      weightGrams: p.weightGrams ?? null,
+      lengthCm: p.lengthCm ?? null,
+      heightCm: p.heightCm ?? null,
+      widthCm: p.widthCm ?? null,
+      diameterCm: p.diameterCm ?? null,
       specs: Array.isArray(p.specs)
         ? p.specs
         : p.specs && typeof p.specs === 'object'
@@ -63,7 +68,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   try {
     const body = await req.json()
     const prisma = await getPrisma()
-    const { name, description, price, originalPrice, image, images, categoryName, brandName, stock, specs, customFields, featured } = body
+    const { name, description, price, originalPrice, image, images, categoryName, brandName, stock, specs, customFields, featured,
+      weightGrams, lengthCm, heightCm, widthCm, diameterCm } = body
     const updateWith = async (dataExtra: any) => {
       return prisma.product.update({
         where: { id: params.id },
@@ -78,6 +84,11 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
           ...(brandName && { brand: { connectOrCreate: { where: { slug: slugify(brandName) }, create: { slug: slugify(brandName), name: brandName } } } }),
           ...(stock != null && { inStock: Number(stock) > 0 }),
           ...(featured !== undefined && { featured: parseBoolean(featured) }),
+          ...(weightGrams !== undefined && { weightGrams: weightGrams != null ? Number(weightGrams) : null }),
+          ...(lengthCm !== undefined && { lengthCm: lengthCm != null ? Number(lengthCm) : null }),
+          ...(heightCm !== undefined && { heightCm: heightCm != null ? Number(heightCm) : null }),
+          ...(widthCm !== undefined && { widthCm: widthCm != null ? Number(widthCm) : null }),
+          ...(diameterCm !== undefined && { diameterCm: diameterCm != null ? Number(diameterCm) : null }),
           ...dataExtra,
         },
       })
