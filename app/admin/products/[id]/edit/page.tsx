@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { FiArrowLeft } from 'react-icons/fi'
 
 type KV = { key: string; value: string }
+type Category = { id: string; slug: string; name: string }
 
 type ProductResponse = {
   item: {
@@ -48,6 +49,7 @@ export default function EditProductPage() {
   const [error, setError] = useState<string>('')
   const [specs, setSpecs] = useState<KV[]>([])
   const [customFields, setCustomFields] = useState<KV[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
   const [form, setForm] = useState({
     name: '',
     category: 'Smartphones',
@@ -99,6 +101,17 @@ export default function EditProductPage() {
     }
     load()
   }, [productId])
+
+  useEffect(() => {
+    const loadCats = async () => {
+      try {
+        const res = await fetch('/api/categories', { cache: 'no-store' })
+        const json = await res.json()
+        setCategories(json.items || [])
+      } catch {}
+    }
+    loadCats()
+  }, [])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const target = e.target
@@ -188,10 +201,7 @@ export default function EditProductPage() {
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Categoria</label>
                   <select name="category" value={form.category} onChange={handleInputChange} required className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
-                    <option value="Smartphones">Smartphones</option>
-                    <option value="Notebooks">Notebooks</option>
-                    <option value="Acessórios">Acessórios</option>
-                    <option value="Tablets">Tablets</option>
+                    {categories.map((c) => (<option key={c.id} value={c.name}>{c.name}</option>))}
                   </select>
                 </div>
                 <div>

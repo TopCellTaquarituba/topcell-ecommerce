@@ -55,10 +55,13 @@ export default function ProductsManagement() {
               </Link>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Gerenciar Produtos</h1>
             </div>
+            <div className="flex items-center gap-2">
+            <Link href="/admin/categories" className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition">Categorias</Link>
             <Link href="/admin/products/new" className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition btn-animate">
               <FiPlus className="w-4 h-4" />
               <span>Adicionar Produto</span>
             </Link>
+            </div>
           </div>
         </div>
       </header>
