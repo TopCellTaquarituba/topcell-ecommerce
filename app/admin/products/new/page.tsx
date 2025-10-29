@@ -9,37 +9,61 @@ type KV = { key: string; value: string }
 
 export default function NewProductPage() {
   const router = useRouter()
-  const [submitting, setSubmitting] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
   const [specs, setSpecs] = useState<KV[]>([])
   const [customFields, setCustomFields] = useState<KV[]>([])
+  const [form, setForm] = useState({
+    name: '',
+    category: 'Smartphones',
+    brand: '',
+    price: '',
+    originalPrice: '',
+    stock: '0',
+    image: '',
+    images: '',
+    description: '',
+    featured: false,
+  })
 
   const addRow = (setter: React.Dispatch<React.SetStateAction<KV[]>>) => setter((arr) => [...arr, { key: '', value: '' }])
   const removeRow = (setter: React.Dispatch<React.SetStateAction<KV[]>>, idx: number) => setter((arr) => arr.filter((_, i) => i !== idx))
   const updateRow = (setter: React.Dispatch<React.SetStateAction<KV[]>>, idx: number, field: 'key' | 'value', val: string) =>
     setter((arr) => arr.map((r, i) => (i === idx ? { ...r, [field]: val } : r)))
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const target = e.target
+    const { name, value } = target
+    const isCheckbox = target instanceof HTMLInputElement && target.type === 'checkbox'
+    setForm((prev) => ({
+      ...prev,
+      [name]: isCheckbox ? target.checked : value,
+    }))
+  }
+
+  const fromPairs = (arr: KV[]): Record<string, string> => {
+    if (!arr) return {}
+    return arr.reduce((acc, { key, value }) => (key ? { ...acc, [key]: value } : acc), {})
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (submitting) return
-    setSubmitting(true)
-    const form = e.target as HTMLFormElement
-    const fd = new FormData(form)
     const payload = {
-      name: String(fd.get('name') || ''),
-      price: Number(fd.get('price') || 0),
-      originalPrice: fd.get('originalPrice') ? Number(fd.get('originalPrice')) : null,
-      categoryName: String(fd.get('category') || ''),
-      brandName: String(fd.get('brand') || ''),
-      stock: Number(fd.get('stock') || 0),
-      image: (fd.get('image') as string) || 'https://via.placeholder.com/500',
-      description: String(fd.get('description') || ''),
-      images: String(fd.get('images') || '')
+      name: form.name.trim(),
+      categoryName: form.category,
+      brandName: form.brand.trim(),
+      price: Number(form.price || 0),
+      originalPrice: form.originalPrice ? Number(form.originalPrice) : null,
+      stock: Number(form.stock || 0),
+      image: form.image || 'https://via.placeholder.com/500',
+      images: form.images
         .split(/\r?\n/)
         .map((s) => s.trim())
         .filter(Boolean),
-      specs: specs.filter((r) => r.key && r.value),
-      customFields: customFields.filter((r) => r.key && r.value),
-      featured: fd.get('featured') === 'on',
+        description: form.description,
+        specs: fromPairs(specs.filter((r) => r.key && r.value)),
+        customFields: fromPairs(customFields.filter((r) => r.key && r.value)),
+        featured: form.featured,
     }
     try {
       const res = await fetch('/api/products', {
@@ -47,18 +71,14 @@ export default function NewProductPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
-      let err = ''
-      try {
-        const j = await res.json()
-        if (!res.ok) err = j?.error || res.statusText
-      } catch {}
-      if (!res.ok) throw new Error(err || 'Falha ao salvar')
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data?.error || res.statusText || 'Falha ao salvar')
       alert('Produto cadastrado com sucesso!')
       router.push('/admin/products')
     } catch (e: any) {
-      alert('Falha ao salvar: ' + (e?.message || 'erro'))
+      setError(e?.message || 'Erro ao salvar')
     } finally {
-      setSubmitting(false)
+      setSaving(false)
     }
   }
 
@@ -79,16 +99,17 @@ export default function NewProductPage() {
 
       <main className="container-custom py-8">
         <form onSubmit={handleSubmit} className="space-y-8">
+          {error && <div className="bg-red-100 text-red-700 px-4 py-3 rounded">{error}</div>}
           <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 space-y-4">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Informações básicas</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Nome do Produto</label>
-                <input name="name" required className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
+                <input name="name" required value={form.name} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Categoria</label>
-                <select name="category" required className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                <select name="category" required value={form.category} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
                   <option value="Smartphones">Smartphones</option>
                   <option value="Notebooks">Notebooks</option>
                   <option value="Acessórios">Acessórios</option>
@@ -101,15 +122,15 @@ export default function NewProductPage() {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Preço (R$)</label>
-                <input type="number" name="price" step="0.01" required className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
+                <input type="number" name="price" step="0.01" required value={form.price} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Preço original (opcional)</label>
-                <input type="number" name="originalPrice" step="0.01" className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
+                <input type="number" name="originalPrice" step="0.01" value={form.originalPrice} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Estoque inicial</label>
-                <input type="number" name="stock" required className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Estoque</label>
+              <input type="number" name="stock" required value={form.stock} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">URL da imagem principal</label>
@@ -117,14 +138,14 @@ export default function NewProductPage() {
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Imagens adicionais (uma por linha)</label>
-                <textarea name="images" rows={3} placeholder={`https://...\nhttps://...`} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
+                <input name="image" value={form.image} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Descrição</label>
-                <textarea name="description" rows={6} placeholder="Detalhes do produto, acessórios, garantia, política de troca, etc." className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
+                <textarea name="images" rows={3} placeholder={`https://...\nhttps://...`} value={form.images} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
               </div>
               <div className="md:col-span-2 flex items-center gap-2">
-                <input type="checkbox" name="featured" id="featured" className="h-4 w-4" />
+              <input type="checkbox" name="featured" id="featured" checked={form.featured} onChange={handleInputChange} className="h-4 w-4" />
                 <label htmlFor="featured" className="text-sm font-semibold text-gray-700 dark:text-gray-300">Marcar como produto destaque</label>
               </div>
             </div>
@@ -165,7 +186,7 @@ export default function NewProductPage() {
           </section>
 
           <div className="flex gap-4">
-            <button disabled={submitting} type="submit" className="px-6 py-3 bg-primary-600 hover:bg-primary-700 disabled:opacity-60 text-white font-semibold rounded-lg">{submitting ? 'Salvando...' : 'Cadastrar Produto'}</button>
+          <button disabled={saving} type="submit" className="px-6 py-3 bg-primary-600 hover:bg-primary-700 disabled:opacity-60 text-white font-semibold rounded-lg">{saving ? 'Salvando...' : 'Cadastrar Produto'}</button>
             <Link href="/admin/products" className="px-6 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-semibold rounded-lg">Cancelar</Link>
           </div>
         </form>
