@@ -110,6 +110,11 @@ export default function EditProductPage() {
     }))
   }
 
+  const fromPairs = (arr: KV[]): Record<string, string> => {
+    if (!arr) return {}
+    return arr.reduce((acc, { key, value }) => (key ? { ...acc, [key]: value } : acc), {})
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!productId) return
@@ -129,8 +134,8 @@ export default function EditProductPage() {
           .map((s) => s.trim())
           .filter(Boolean),
         description: form.description,
-        specs: specs.filter((row) => row.key && row.value),
-        customFields: customFields.filter((row) => row.key && row.value),
+        specs: fromPairs(specs.filter((row) => row.key && row.value)),
+        customFields: fromPairs(customFields.filter((row) => row.key && row.value)),
         featured: form.featured,
       }
       const res = await fetch(`/api/products/${productId}`, {
