@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 export const runtime = 'nodejs'
-import { blingFetch, mapBlingProductToLocal } from '@/lib/bling'
+import { blingFetch, mapBlingProductToLocal, fetchBlingProductImage, fetchBlingProductImages, fetchBlingProductDetail } from '@/lib/bling'
 import { Prisma } from '@prisma/client'
 import { getPrisma } from '@/lib/prisma'
 
@@ -21,6 +21,42 @@ export async function POST(req: NextRequest) {
     for (const p of items) {
       const mapped = mapBlingProductToLocal(p)
       if (!mapped.externalId) continue
+      // Ensure description and stock by fetching detail when needed or when list payload lacks fields
+      const needDetail = !mapped.description || mapped.stockQty == null
+      if (needDetail) {
+        const det = await fetchBlingProductDetail(mapped.externalId)
+        if (det) {
+          const detMapped = mapBlingProductToLocal(det)
+          if (!mapped.description && detMapped.description) mapped.description = detMapped.description
+          if (mapped.stockQty == null && detMapped.stockQty != null) {
+            mapped.stockQty = detMapped.stockQty
+            mapped.inStock = Boolean(detMapped.stockQty > 0)
+          }
+          // Also try images from detail if still missing
+          if (!mapped.image) {
+            const fromDet = detMapped.image
+            if (fromDet) {
+              mapped.image = fromDet
+              mapped.images = [fromDet]
+            }
+          }
+        }
+      }
+      if (!mapped.image) {
+        // Try multiple sources for images
+        const list = await fetchBlingProductImages(mapped.externalId)
+        if (list.length) {
+          mapped.image = list[0]
+          mapped.images = list
+        } else {
+          // last resort: single image from detail
+          const fetched = await fetchBlingProductImage(mapped.externalId)
+          if (fetched) {
+            mapped.image = fetched
+            mapped.images = [fetched]
+          }
+        }
+      }
       upserts.push(
         prisma.product.upsert({
           where: { externalId: mapped.externalId },
@@ -30,6 +66,7 @@ export async function POST(req: NextRequest) {
             price: new Prisma.Decimal(String(mapped.price || 0)),
             image: mapped.image || '',
             images: mapped.images || [],
+            ...(mapped.inStock != null ? { inStock: Boolean(mapped.inStock) } : {}),
             ...(mapped.weightGrams != null ? { weightGrams: mapped.weightGrams } : {}),
             ...(mapped.lengthCm != null ? { lengthCm: mapped.lengthCm } : {}),
             ...(mapped.heightCm != null ? { heightCm: mapped.heightCm } : {}),
@@ -42,13 +79,24 @@ export async function POST(req: NextRequest) {
             price: new Prisma.Decimal(String(mapped.price || 0)),
             image: mapped.image || '',
             images: mapped.images || [],
-            inStock: true,
+            inStock: Boolean(mapped.inStock ?? true),
             rating: 0,
             ...(mapped.weightGrams != null ? { weightGrams: mapped.weightGrams } : {}),
             ...(mapped.lengthCm != null ? { lengthCm: mapped.lengthCm } : {}),
             ...(mapped.heightCm != null ? { heightCm: mapped.heightCm } : {}),
             ...(mapped.widthCm != null ? { widthCm: mapped.widthCm } : {}),
           },
+        }).then(async (prod: { id: string }) => {
+          if (mapped.stockQty != null) {
+            const agg = await prisma.inventoryMovement.aggregate({ _sum: { quantity: true }, where: { productId: prod.id } })
+            const current = Number(agg._sum.quantity || 0)
+            const target = Number(mapped.stockQty)
+            const delta = target - current
+            if (delta !== 0) {
+              await prisma.inventoryMovement.create({ data: { productId: prod.id, quantity: delta, type: 'adjust', note: 'Bling sync' } })
+            }
+          }
+          return prod
         })
       )
     }
@@ -60,4 +108,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: e?.message || 'failed' }, { status: 500 })
   }
 }
-

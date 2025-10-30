@@ -2,7 +2,8 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ['images.unsplash.com'],
+    // Allow Unsplash and common external sources used by Bling products
+    domains: ['images.unsplash.com', 'i.imgur.com', 'imgur.com'],
   },
 }
 

@@ -1,4 +1,4 @@
-Ôªø'use client'
+'use client'
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
@@ -23,19 +23,6 @@ export default function ProductDetailPage() {
 
   const [product, setProduct] = useState<any | null>(null)
 
-  function sanitizeHtmlBasic(html: string) {
-    try {
-      let out = String(html || '')
-      out = out.replace(/<\s*(script|style)[^>]*>[\s\S]*?<\s*\/\1\s*>/gi, '')
-      out = out.replace(/ on[a-z]+\s*=\s*"[^"]*"/gi, '')
-      out = out.replace(/ on[a-z]+\s*=\s*'[^']*'/gi, '')
-      out = out.replace(/ on[a-z]+\s*=\s*[^\s>]+/gi, '')
-      out = out.replace(/href\s*=\s*"javascript:[^"]*"/gi, 'href="#"')
-      out = out.replace(/href\s*=\s*'javascript:[^']*'/gi, "href='#'")
-      return out
-    } catch { return String(html || '') }
-  }
-
   useEffect(() => {
     async function load() {
       const res = await fetch(`/api/products/${params.id}`, { cache: 'no-store' })
@@ -59,7 +46,6 @@ export default function ProductDetailPage() {
           category: p.category || '',
           rating: p.rating || 0,
           description: p.description || '',
-          inStock: Boolean(p.inStock || (Number(p.stock || 0) > 0)),
           specifications: specsObj,
         })
       } else {
@@ -79,7 +65,7 @@ export default function ProductDetailPage() {
   if (!product) {
     return (
       <div className="container-custom py-20 text-center">
-        <h1 className="text-3xl font-bold mb-4">Produto n√£o encontrado</h1>
+        <h1 className="text-3xl font-bold mb-4">Produto n„o encontrado</h1>
         <Link href="/products" className="text-primary-600 hover:underline">
           Voltar para a lista de produtos
         </Link>
@@ -114,7 +100,7 @@ export default function ProductDetailPage() {
     const cep = String(zip || '').replace(/\D/g, '')
     if (cep.length !== 8) {
       setShipping(null)
-      setShippingError('Informe um CEP v√°lido (8 d√≠gitos).')
+      setShippingError('Informe um CEP v·lido (8 dÌgitos).')
       return
     }
     setShippingLoading(true)
@@ -126,7 +112,7 @@ export default function ProductDetailPage() {
         body: JSON.stringify({ destinationZip: cep, items: [{ productId: product.id, quantity }], declaredValue: product.price * quantity }),
       })
       const data = await res.json().catch(() => ({}))
-      if (!res.ok || !data?.ok) throw new Error(data?.error || 'Falha no c√°lculo de frete')
+      if (!res.ok || !data?.ok) throw new Error(data?.error || 'Falha no c·lculo de frete')
       setShipping({ package: data.package, quotes: data.quotes })
     } catch (e) {
       setShippingError(e instanceof Error ? e.message : 'Falha ao calcular frete')
@@ -159,7 +145,7 @@ export default function ProductDetailPage() {
     <div className="container-custom py-6">
       {/* Breadcrumb */}
       <nav className="text-sm text-gray-600 dark:text-gray-400 mb-8">
-        <Link href="/" className="hover:text-primary-600">In√≠cio</Link>
+        <Link href="/" className="hover:text-primary-600">InÌcio</Link>
         {' / '}
         <Link href="/products" className="hover:text-primary-600">Produtos</Link>
         {' / '}
@@ -206,16 +192,16 @@ export default function ProductDetailPage() {
                   />
                 ))}
               </div>
-              <span className="text-gray-600 dark:text-gray-400">{averageRating.toFixed(1)} ‚Ä¢ {reviews.length} avalia√ß√µes</span>
+              <span className="text-gray-600 dark:text-gray-400">{averageRating.toFixed(1)} ï {reviews.length} avaliaÁıes</span>
             </div>
           </div>
 
           {/* Description & Characteristics */}
           <div className="mt-8">
-            <h3 className="text-xl font-bold mb-3 dark:text-white">Descri√ß√£o</h3>
+            <h3 className="text-xl font-bold mb-3 dark:text-white">DescriÁ„o</h3>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{product.description}</p>
 
-            <h3 className="text-xl font-bold mt-8 mb-3 dark:text-white">Caracter√≠sticas</h3>
+            <h3 className="text-xl font-bold mt-8 mb-3 dark:text-white">CaracterÌsticas</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {Object.entries(product.specifications || {}).map(([key, value]) => (
                 <div key={key} className="border border-gray-200 dark:border-gray-700 rounded p-3">
@@ -248,7 +234,7 @@ export default function ProductDetailPage() {
                 )}
               </div>
               {/* Installments + payment methods */}
-              <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Em at√© 10x sem juros</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Em atÈ 10x sem juros</div>
               <button
                 type="button"
                 onClick={() => setShowPayments((v) => !v)}
@@ -268,15 +254,15 @@ export default function ProductDetailPage() {
                     </div>
                     {/* Boleto */}
                     <div className="flex items-center justify-between">
-                        <span className="text-gray-700 dark:text-gray-300">Boleto banc√°rio (√† vista)</span>
+                        <span className="text-gray-700 dark:text-gray-300">Boleto banc·rio (‡ vista)</span>
                       <span className="font-semibold text-gray-900 dark:text-white">
                         R$ {product.price.toFixed(2).replace('.', ',')}
                       </span>
                     </div>
-                    {/* Cart√É∆í√Ç¬µes */}
+                    {/* Cart√É¬µes */}
                     <div>
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-700 dark:text-gray-300">Cart√£o de cr√©dito</span>
+                        <span className="text-gray-700 dark:text-gray-300">Cart„o de crÈdito</span>
                         <span className="font-semibold text-gray-900 dark:text-white">
                           10x de R$ {(product.price / 10).toFixed(2).replace('.', ',')} sem juros
                         </span>
@@ -306,7 +292,7 @@ export default function ProductDetailPage() {
                         {q.error && q.error !== '0' ? (
                           <span className="text-red-600 text-xs">{q.message || 'erro'}</span>
                         ) : (
-                          <span className="font-semibold text-gray-900 dark:text-white">R$ {Number(q.price||0).toFixed(2).replace('.', ',')} ‚Ä¢ {q.deadlineDays} dias</span>
+                          <span className="font-semibold text-gray-900 dark:text-white">R$ {Number(q.price||0).toFixed(2).replace('.', ',')} ï {q.deadlineDays} dias</span>
                         )}
                       </div>
                     ))}
@@ -317,11 +303,11 @@ export default function ProductDetailPage() {
               <div className="space-y-2 mb-6">
                 <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                   <FiTruck className="w-5 h-5 text-primary-600" />
-                  <span>Frete gr√°tis para a sua regi√£o</span>
+                  <span>Frete gr·tis para a sua regi„o</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                   <FiShield className="w-5 h-5 text-primary-600" />
-                  <span>Devolu√ß√£o gr√°tis em at√© 30 dias</span>
+                  <span>DevoluÁ„o gr·tis em atÈ 30 dias</span>
                 </div>
               </div>
               {/* Quantity */}
@@ -363,3 +349,5 @@ export default function ProductDetailPage() {
     </div>
   )
 }
+
+
