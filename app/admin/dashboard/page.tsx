@@ -196,6 +196,7 @@ export default function Dashboard() {
     { label: 'Vendas', href: '/admin/sales', icon: FiTrendingUp },
     { label: 'Conteudo', href: '/admin/content', icon: FiFileText },
     { label: 'Configuracoes', href: '/admin/analytics', icon: FiSettings },
+    { label: 'Integrações', href: '/admin/integrations/bling', icon: FiSettings },
   ]
 
   const isActive = (href: string) => pathname?.startsWith(href)

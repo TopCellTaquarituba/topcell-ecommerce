@@ -85,6 +85,12 @@ model Customer {
   name      String
   email     String?  @unique
   phone     String?
+  // Cadastro nacional: CPF (11) ou CNPJ (14)
+  cpfCnpj   String?  @unique
+  // Data de nascimento do cliente
+  birthDate DateTime?
+  // Autenticação básica (opcional para futuras senhas)
+  passwordHash String?
   orders    Order[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -157,4 +163,18 @@ model SiteSettings {
   about      Json
   updatedAt  DateTime @updatedAt
   createdAt  DateTime @default(now())
+}
+
+// OAuth tokens for external integrations (e.g., Bling)
+model IntegrationToken {
+  id           String   @id @default(cuid())
+  provider     String   // 'bling'
+  accessToken  String
+  refreshToken String?
+  expiresAt    DateTime?
+  scope        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([provider])
 }

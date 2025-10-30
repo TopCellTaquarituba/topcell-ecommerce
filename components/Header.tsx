@@ -66,6 +66,9 @@ export default function Header() {
             <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition">
               <FiSearch className="w-6 h-6 text-gray-700 dark:text-gray-300" />
             </button>
+            <Link href="/login" className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+              Entrar
+            </Link>
             <Link href="/cart" className="relative p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition">
               <FiShoppingCart className="w-6 h-6 text-gray-700 dark:text-gray-300" />
               {totalItems > 0 && (
@@ -114,6 +117,9 @@ export default function Header() {
               <div className="flex items-center space-x-2">
                 <ThemeToggle />
               </div>
+              <Link href="/login" className="flex items-center space-x-2">
+                <span>Entrar</span>
+              </Link>
               <Link href="/cart" className="flex items-center space-x-2">
                 <FiShoppingCart className="w-6 h-6" />
                 <span>Carrinho ({totalItems})</span>

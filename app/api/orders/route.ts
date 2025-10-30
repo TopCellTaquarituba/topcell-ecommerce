@@ -314,6 +314,25 @@ export async function POST(req: NextRequest) {
       include: { items: true },
     })
 
+    // Try to create order in Bling (non-blocking)
+    try {
+      const { blingFetch, buildBlingOrderPayload, getPrisma: _noop } = await import('@/lib/bling') as any
+      const payload = buildBlingOrderPayload({ ...order, customer: { id: customerId, name, email, phone } })
+      const resp = await blingFetch('/pedidos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      if (resp.ok) {
+        const data = await resp.json()
+        const externalId = String((data as any)?.data?.id || (data as any)?.id || '')
+        if (externalId) {
+          await prisma.order.update({ where: { id: order.id }, data: { externalId } })
+        }
+      } else {
+        const t = await resp.text()
+        console.warn('Bling order create failed:', t)
+      }
+    } catch (err) {
+      console.warn('Bling integration skipped:', (err as any)?.message)
+    }
+
     return NextResponse.json({ ok: true, id: order.id, number: order.number })
   } catch (e: any) {
     console.error('POST /api/orders error', e)
