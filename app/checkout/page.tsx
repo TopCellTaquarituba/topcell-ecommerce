@@ -62,7 +62,7 @@ export default function CheckoutPage() {
       setStep('review')
       return
     }
-    // Create order in backend and redirect to tracking
+    // Create order then abrir tela de pagamento (Bricks)
     try {
       const payload = {
         customer: { name: formData.name, email: formData.email, phone: formData.phone },
@@ -84,8 +84,8 @@ export default function CheckoutPage() {
       if (!res.ok) throw new Error(data?.error || 'Falha ao criar pedido')
       const orderId = data.id as string
       localStorage.setItem('lastOrderId', data.number || orderId)
-      clearCart()
-      router.push(`/order/${orderId}`)
+      // Ir para a tela de pagamento com Mercado Pago Bricks
+      router.push(`/checkout/pay?orderId=${orderId}`)
     } catch (err: any) {
       alert('Falha ao finalizar: ' + (err?.message || 'Erro desconhecido'))
     }

@@ -7,6 +7,7 @@ export default function LoginPage() {
   const router = useRouter()
   const search = useSearchParams()
   const nextUrl = search.get('next') || '/'
+  const mode = (search.get('mode') || '').toLowerCase()
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -49,15 +50,35 @@ export default function LoginPage() {
     setError(null)
     setLoading(true)
     const fd = new FormData(e.currentTarget)
-    const payload = {
-      name: String(fd.get('name') || ''),
-      email: String(fd.get('email') || ''),
-      phone: String(fd.get('phone') || ''),
-      document: String(fd.get('document') || ''),
-      birthDate: String(fd.get('birthDate') || ''),
+    let url = '/api/auth/upsert'
+    let payload: any
+    if (mode === 'login') {
+      url = '/api/auth/login'
+      payload = {
+        identifier: String(fd.get('identifier') || ''),
+        password: String(fd.get('password') || ''),
+      }
+    } else if (mode === 'signup') {
+      url = '/api/auth/register'
+      payload = {
+        name: String(fd.get('name') || ''),
+        email: String(fd.get('email') || ''),
+        phone: String(fd.get('phone') || ''),
+        document: String(fd.get('document') || ''),
+        password: String(fd.get('password') || ''),
+        birthDate: String(fd.get('birthDate') || ''),
+      }
+    } else {
+      payload = {
+        name: String(fd.get('name') || ''),
+        email: String(fd.get('email') || ''),
+        phone: String(fd.get('phone') || ''),
+        document: String(fd.get('document') || ''),
+        birthDate: String(fd.get('birthDate') || ''),
+      }
     }
     try {
-      const res = await fetch('/api/auth/upsert', {
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -75,7 +96,7 @@ export default function LoginPage() {
   return (
     <div className="max-w-xl mx-auto p-6">
       <Script src="https://code.jquery.com/jquery-3.7.1.min.js" strategy="afterInteractive" />
-      <h1 className="text-2xl font-semibold mb-4">Entrar ou Cadastrar</h1>
+      <h1 className="text-2xl font-semibold mb-4">{mode === 'login' ? 'Entrar' : mode === 'signup' ? 'Criar conta' : 'Entrar ou Cadastrar'}</h1>
       <p className="text-sm text-gray-600 mb-4">Preencha seus dados. Campos obrigatórios: email, telefone e CPF ou CNPJ.</p>
 
       {error && <div className="mb-4 text-red-600 text-sm">{error}</div>}
@@ -102,7 +123,7 @@ export default function LoginPage() {
           <input id="birthDate" name="birthDate" className="w-full border rounded px-3 py-2" placeholder="dd/mm/aaaa ou 01011990" />
         </div>
         <button type="submit" disabled={loading} className="bg-black text-white px-4 py-2 rounded disabled:opacity-50">
-          {loading ? 'Enviando...' : 'Entrar / Cadastrar'}
+          {loading ? 'Enviando...' : (mode === 'login' ? 'Entrar' : mode === 'signup' ? 'Cadastrar' : 'Entrar / Cadastrar')}
         </button>
       </form>
     </div>

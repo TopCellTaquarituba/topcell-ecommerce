@@ -141,6 +141,20 @@ export default function AdminContentPage() {
             <label className="block text-sm font-semibold mb-1">Missão</label>
             <input className="w-full input" value={content.about.mission} onChange={(e) => handleAboutChange('mission', e.target.value)} />
           </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-semibold mb-1">Imagem da seção (URL)</label>
+              <input className="w-full input" placeholder="https://..." value={content.about.imageUrl || ''} onChange={(e) => setContent({ ...content, about: { ...content.about, imageUrl: e.target.value } })} />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold mb-1">Título na imagem</label>
+              <input className="w-full input" value={content.about.imageTitle || ''} onChange={(e) => setContent({ ...content, about: { ...content.about, imageTitle: e.target.value } })} />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold mb-1">Subtítulo na imagem</label>
+              <input className="w-full input" value={content.about.imageSubtitle || ''} onChange={(e) => setContent({ ...content, about: { ...content.about, imageSubtitle: e.target.value } })} />
+            </div>
+          </div>
         </div>
       </section>
 

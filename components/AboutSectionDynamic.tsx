@@ -45,14 +45,19 @@ export default function AboutSectionDynamic() {
           <div className={`animate-slide-up ${isVisible ? 'animate-fade-in' : ''}`} style={{ animationDelay: '200ms' }}>
             <div className="relative">
               <div className="aspect-square bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900 dark:to-primary-800 rounded-2xl overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary-600/20 to-primary-800/20"></div>
+                {content.about.imageUrl ? (
+                  <img src={content.about.imageUrl} alt={content.about.imageTitle || 'About image'} className="absolute inset-0 w-full h-full object-cover" />
+                ) : null}
+                <div className="absolute inset-0 bg-gradient-to-br from-primary-600/10 to-primary-800/40"></div>
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center text-white">
-                    <div className="w-32 h-32 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
-                      <FiAward className="w-16 h-16" />
-                    </div>
-                    <h4 className="text-2xl font-bold mb-2">TopCell</h4>
-                    <p className="text-white/80">Desde 2009</p>
+                    {!content.about.imageUrl && (
+                      <div className="w-32 h-32 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
+                        <FiAward className="w-16 h-16" />
+                      </div>
+                    )}
+                    <h4 className="text-2xl font-bold mb-2">{content.about.imageTitle || ''}</h4>
+                    <p className="text-white/80">{content.about.imageSubtitle || ''}</p>
                   </div>
                 </div>
               </div>
@@ -86,4 +91,3 @@ export default function AboutSectionDynamic() {
     </section>
   )
 }
-

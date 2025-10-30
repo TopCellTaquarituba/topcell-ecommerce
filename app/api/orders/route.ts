@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 export const runtime = 'nodejs'
 import { getPrisma } from '@/lib/prisma'
+import type { Order } from '@prisma/client'
 
 type QueryBool = string | string[] | undefined
 
@@ -147,6 +148,7 @@ function computeAggregates(orders: any[]) {
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
+  const mine = searchParams.get('mine') === '1'
   const from = toDate(searchParams.get('from'))
   const to = toDate(searchParams.get('to'))
   const statuses = parseArray(searchParams.get('status'))
@@ -166,6 +168,17 @@ export async function GET(req: NextRequest) {
     let total = 0
     let customerTotal = 0
     let statsSource: any[] = []
+
+    if (mine && hasDb) {
+      const { getAuthTokenFromRequest, verifyCustomerToken } = await import('@/lib/auth')
+      const token = getAuthTokenFromRequest(req as any)
+      const payload = token ? verifyCustomerToken(token) : null
+      if (!payload?.sub) return NextResponse.json({ ok: true, orders: [] })
+      const prisma = await getPrisma()
+      const list: Order[] = await prisma.order.findMany({ where: { customerId: payload.sub }, orderBy: { createdAt: 'desc' } })
+      const normalized = list.map((o: Order) => ({ id: o.id, number: o.number ?? o.id, status: o.status, total: Number(o.total as any), createdAt: o.createdAt }))
+      return NextResponse.json({ ok: true, orders: normalized })
+    }
 
     if (!hasDb) {
       const demo = buildDemoData() as { orders: any[] }
@@ -247,6 +260,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const prisma = await getPrisma()
+    const { getAuthTokenFromRequest, verifyCustomerToken } = await import('@/lib/auth')
     const body = await req.json()
     const {
       customer = {},
@@ -271,17 +285,24 @@ export async function POST(req: NextRequest) {
       return { productId: String(it.productId), quantity: qty, price }
     })
 
-    // Upsert customer by email if provided; otherwise create a guest customer
-    let customerId: string | undefined = undefined
+    // Prefer authenticated customer if available
+    const token = getAuthTokenFromRequest(req as any)
+    const payload = token ? verifyCustomerToken(token) : null
+    let customerId: string | undefined = payload?.sub
     const name = String(customer.name || shipping.name || 'Cliente')
     const email = customer.email ? String(customer.email) : null
     const phone = String(customer.phone || shipping.phone || '') || null
-    if (email) {
-      const c = await prisma.customer.upsert({ where: { email }, update: { name, phone: phone || undefined }, create: { name, email, phone } })
-      customerId = c.id
+    if (!customerId) {
+      if (email) {
+        const c = await prisma.customer.upsert({ where: { email }, update: { name, phone: phone || undefined }, create: { name, email, phone } })
+        customerId = c.id
+      } else {
+        const c = await prisma.customer.create({ data: { name, email: null, phone } })
+        customerId = c.id
+      }
     } else {
-      const c = await prisma.customer.create({ data: { name, email: null, phone } })
-      customerId = c.id
+      // update basic info for logged customer
+      await prisma.customer.update({ where: { id: customerId }, data: { name, phone: phone || undefined, ...(email ? { email } : {}) } }).catch(()=>{})
     }
 
     const genNumber = () => {

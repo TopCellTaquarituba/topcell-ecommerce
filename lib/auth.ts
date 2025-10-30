@@ -40,3 +40,29 @@ export function getAuthTokenFromRequest(req: NextRequest): string | null {
   return req.cookies.get(COOKIE_NAME)?.value || null
 }
 
+// Password utilities (Node built-in scrypt)
+import crypto from 'node:crypto'
+
+export async function hashPassword(password: string): Promise<string> {
+  const salt = crypto.randomBytes(16)
+  const derived = await new Promise<Buffer>((resolve, reject) => {
+    crypto.scrypt(password, salt, 64, (err, buf) => (err ? reject(err) : resolve(buf)))
+  })
+  return `s1$${salt.toString('hex')}$${derived.toString('hex')}`
+}
+
+export async function verifyPassword(password: string, stored: string): Promise<boolean> {
+  try {
+    // format: s1$<salt_hex>$<hash_hex>
+    const [scheme, saltHex, hashHex] = stored.split('$')
+    if (!scheme || !saltHex || !hashHex) return false
+    const salt = Buffer.from(saltHex, 'hex')
+    const expected = Buffer.from(hashHex, 'hex')
+    const derived = await new Promise<Buffer>((resolve, reject) => {
+      crypto.scrypt(password, salt, expected.length, (err, buf) => (err ? reject(err) : resolve(buf)))
+    })
+    return crypto.timingSafeEqual(derived, expected)
+  } catch {
+    return false
+  }
+}

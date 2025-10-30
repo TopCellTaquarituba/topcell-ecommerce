@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from 'react'
 
 export interface CartItem {
   id: string
@@ -22,7 +22,35 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined)
 
 export function CartProvider({ children }: { children: ReactNode }) {
+  const [customerId, setCustomerId] = useState<string | 'guest'>('guest')
+  const storageKey = useMemo(() => `cart_${customerId || 'guest'}` as const, [customerId])
   const [items, setItems] = useState<CartItem[]>([])
+
+  // Hydrate cart per user
+  useEffect(() => {
+    // Determine current user id
+    fetch('/api/auth/me', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((j) => {
+        const id = j?.authenticated && j?.customer?.id ? String(j.customer.id) : 'guest'
+        setCustomerId(id as any)
+      })
+      .catch(() => setCustomerId('guest'))
+  }, [])
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(storageKey)
+      if (raw) setItems(JSON.parse(raw))
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storageKey])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(items))
+    } catch {}
+  }, [items, storageKey])
 
   const addToCart = (item: Omit<CartItem, 'quantity'>) => {
     setItems((prevItems) => {

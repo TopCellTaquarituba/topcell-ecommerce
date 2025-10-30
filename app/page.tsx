@@ -4,6 +4,7 @@ import HeroCarousel from '@/components/HeroCarousel'
 import CategoryCarousel from '@/components/CategoryCarousel'
 import AboutSectionDynamic from '@/components/AboutSectionDynamic'
 import FAQSection from '@/components/FAQSection'
+import MapSection from '@/components/MapSection'
 import { getPrisma } from '@/lib/prisma'
 
 type HomeProps = {
@@ -132,8 +133,8 @@ export default async function HomePage({ searchParams }: HomeProps) {
         </div>
       </section>
 
+      <MapSection />
       <FAQSection />
     </div>
   )
 }
-

@@ -13,6 +13,9 @@ export type CMSAbout = {
   subtitle: string
   paragraphs: string[]
   mission: string
+  imageUrl?: string
+  imageTitle?: string
+  imageSubtitle?: string
 }
 
 export type CMSContent = {
@@ -27,5 +30,8 @@ export const defaultContent: CMSContent = {
     subtitle: '',
     paragraphs: [],
     mission: '',
+    imageUrl: '',
+    imageTitle: '',
+    imageSubtitle: '',
   },
 }

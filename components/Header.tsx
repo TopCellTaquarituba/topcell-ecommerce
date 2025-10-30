@@ -1,8 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
-import { FiShoppingCart, FiSearch, FiMenu, FiX, FiSun, FiMoon } from 'react-icons/fi'
+import { useEffect, useState } from 'react'
+import { FiShoppingCart, FiSearch, FiMenu, FiX, FiSun, FiMoon, FiUser, FiLogOut, FiPackage } from 'react-icons/fi'
 import { useCart } from '@/context/CartContext'
 import { useTheme } from '@/context/ThemeContext'
 
@@ -28,6 +28,16 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const { items } = useCart()
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0)
+  const [customerName, setCustomerName] = useState<string | null>(null)
+  const [accountOpen, setAccountOpen] = useState(false)
+
+  useEffect(() => {
+    // check session
+    fetch('/api/auth/me', { cache: 'no-store' }).then(async (r) => {
+      const j = await r.json().catch(() => null)
+      if (j?.authenticated && j?.customer?.name) setCustomerName(j.customer.name as string)
+    }).catch(() => {})
+  }, [])
 
   return (
     <header className="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-50 transition-colors duration-300">
@@ -49,9 +59,6 @@ export default function Header() {
             <Link href="/products?category=smartphones" className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition">
               Smartphones
             </Link>
-            <Link href="/products?category=laptops" className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition">
-              Notebooks
-            </Link>
             <Link href="/products?category=accessories" className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition">
               Acessórios
             </Link>
@@ -66,9 +73,31 @@ export default function Header() {
             <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition">
               <FiSearch className="w-6 h-6 text-gray-700 dark:text-gray-300" />
             </button>
-            <Link href="/login" className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
-              Entrar
-            </Link>
+            <div className="relative">
+              <button onClick={() => setAccountOpen((v)=>!v)} className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition" aria-label="Minha conta">
+                <FiUser className="w-6 h-6 text-gray-700 dark:text-gray-300" />
+                {customerName && <span className="text-gray-700 dark:text-gray-200 text-sm max-w-[140px] truncate">{customerName}</span>}
+              </button>
+              {accountOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-20">
+                  {customerName ? (
+                    <>
+                      <Link href="/orders" className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <FiPackage className="w-4 h-4" /> <span>Meus pedidos</span>
+                      </Link>
+                      <button onClick={async ()=>{ try { await fetch('/api/auth/logout',{method:'POST'}); location.reload() } catch {} }} className="w-full text-left flex items-center gap-2 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <FiLogOut className="w-4 h-4" /> <span>Sair</span>
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link href="/signin" className="block px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700">Entrar</Link>
+                      <Link href="/signup" className="block px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700">Cadastrar</Link>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
             <Link href="/cart" className="relative p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition">
               <FiShoppingCart className="w-6 h-6 text-gray-700 dark:text-gray-300" />
               {totalItems > 0 && (
@@ -117,8 +146,9 @@ export default function Header() {
               <div className="flex items-center space-x-2">
                 <ThemeToggle />
               </div>
-              <Link href="/login" className="flex items-center space-x-2">
-                <span>Entrar</span>
+              <Link href="/account" className="flex items-center space-x-2">
+                <FiUser className="w-6 h-6" />
+                <span>{customerName ? customerName : 'Minha conta'}</span>
               </Link>
               <Link href="/cart" className="flex items-center space-x-2">
                 <FiShoppingCart className="w-6 h-6" />
