@@ -275,7 +275,7 @@ export async function fetchBlingProductDetail(id: string): Promise<any | null> {
 
 export function buildBlingOrderPayload(order: any) {
   // Build a minimal order payload compatible with Bling V3 (adjust as needed)
-  return {
+  const payload: any = {
     numero: order.number,
     cliente: {
       nome: order.shippingName || order.customer?.name || 'Cliente',
@@ -293,4 +293,25 @@ export function buildBlingOrderPayload(order: any) {
     })),
     total: Number(order.total || 0),
   }
+  // Optional shipping address mapping (helps emissão posterior)
+  if (order.shippingZip || order.shippingAddress) {
+    payload.transporte = {
+      enderecoEntrega: {
+        cep: order.shippingZip || undefined,
+        endereco: order.shippingAddress || undefined,
+        numero: order.shippingNumber || undefined,
+        complemento: order.shippingComplement || undefined,
+        bairro: order.shippingNeighborhood || undefined,
+        cidade: order.shippingCity || undefined,
+        uf: order.shippingState || undefined,
+      },
+    }
+  }
+  // Set initial situation in Bling if provided (keeps order "em aberto")
+  const sit = process.env.BLING_SITUACAO_ID
+  if (sit) {
+    const idNum = Number(sit)
+    if (!Number.isNaN(idNum)) (payload as any).situacao = { id: idNum }
+  }
+  return payload
 }
