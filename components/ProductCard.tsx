@@ -3,7 +3,8 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useCart } from '@/context/CartContext'
-import { FiShoppingCart } from 'react-icons/fi'
+import { useFavorites } from '@/context/FavoritesContext'
+import { FiShoppingCart, FiHeart } from 'react-icons/fi'
 
 interface Product {
   id: string
@@ -20,6 +21,7 @@ interface ProductCardProps {
 
 export default function ProductCard({ product }: ProductCardProps) {
   const { addToCart } = useCart()
+  const { isFavorite, toggleFavorite } = useFavorites()
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -41,6 +43,14 @@ export default function ProductCard({ product }: ProductCardProps) {
             alt={product.name}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
           />
+          <button
+            type="button"
+            onClick={(e)=>{ e.preventDefault(); e.stopPropagation(); toggleFavorite(product.id) }}
+            aria-label="Favoritar"
+            className={`absolute top-2 right-2 rounded-full p-2 backdrop-blur bg-white/80 dark:bg-gray-800/70 shadow ${isFavorite(product.id) ? 'text-red-500' : 'text-gray-600 dark:text-gray-300'}`}
+          >
+            <FiHeart className={`w-5 h-5 ${isFavorite(product.id) ? 'fill-red-500' : ''}`} />
+          </button>
         </div>
         <div className="p-4 flex-1 flex flex-col">
           <span className="text-xs text-gray-500 dark:text-gray-400 uppercase">{product.category}</span>
@@ -78,4 +88,3 @@ export default function ProductCard({ product }: ProductCardProps) {
     </div>
   )
 }
-

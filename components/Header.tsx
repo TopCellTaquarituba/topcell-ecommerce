@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { FiShoppingCart, FiSearch, FiMenu, FiX, FiSun, FiMoon, FiUser, FiLogOut, FiPackage } from 'react-icons/fi'
+import { FiShoppingCart, FiSearch, FiMenu, FiX, FiSun, FiMoon, FiUser, FiLogOut, FiPackage, FiHeart } from 'react-icons/fi'
 import { useCart } from '@/context/CartContext'
 import { useTheme } from '@/context/ThemeContext'
 
@@ -77,6 +77,9 @@ export default function Header() {
             <button onClick={() => setSearchOpen(true)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition" aria-label="Pesquisar">
               <FiSearch className="w-6 h-6 text-gray-700 dark:text-gray-300" />
             </button>
+            <Link href="/favorites" className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition" aria-label="Favoritos">
+              <FiHeart className="w-6 h-6 text-gray-700 dark:text-gray-300" />
+            </Link>
             <div className="relative">
               <button onClick={() => setAccountOpen((v)=>!v)} className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition" aria-label="Minha conta">
                 <FiUser className="w-6 h-6 text-gray-700 dark:text-gray-300" />
@@ -86,6 +89,9 @@ export default function Header() {
                 <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-20">
                   {customerName ? (
                     <>
+                      <Link href="/favorites" className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <FiHeart className="w-4 h-4" /> <span>Meus favoritos</span>
+                      </Link>
                       <Link href="/orders" className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700">
                         <FiPackage className="w-4 h-4" /> <span>Meus pedidos</span>
                       </Link>
@@ -95,8 +101,8 @@ export default function Header() {
                     </>
                   ) : (
                     <>
-                      <Link href="/signin" className="block px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700">Entrar</Link>
-                      <Link href="/signup" className="block px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700">Cadastrar</Link>
+                      <Link href="/login?mode=login" className="block px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700">Entrar</Link>
+                      <Link href="/login?mode=signup" className="block px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700">Cadastrar</Link>
                     </>
                   )}
                 </div>
@@ -117,6 +123,9 @@ export default function Header() {
             <button onClick={() => setSearchOpen(true)} className="p-2" aria-label="Pesquisar">
               <FiSearch className="w-6 h-6" />
             </button>
+            <Link href="/favorites" className="p-2" aria-label="Favoritos">
+              <FiHeart className="w-6 h-6" />
+            </Link>
             <button
               className="p-2"
               onClick={() => setIsMenuOpen(!isMenuOpen)}

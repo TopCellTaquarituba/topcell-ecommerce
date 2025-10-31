@@ -46,7 +46,7 @@ export default function Footer() {
             <h4 className="font-semibold mb-4">Suporte</h4>
             <ul className="space-y-2 text-gray-400">
               <li>
-                <Link href="/about" className="hover:text-white transition-all duration-300">
+                <Link href="/#about-section" className="hover:text-white transition-all duration-300">
                   Sobre Nós
                 </Link>
               </li>

@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import type { Review } from '@/lib/products'
 import { useCart } from '@/context/CartContext'
-import { FiShoppingCart, FiMinus, FiPlus, FiStar, FiTruck, FiShield, FiBell } from 'react-icons/fi'
+import { FiShoppingCart, FiMinus, FiPlus, FiStar, FiTruck, FiShield, FiBell, FiHeart } from 'react-icons/fi'
+import { useFavorites } from '@/context/FavoritesContext'
 import Link from 'next/link'
 import Reviews from '@/components/Reviews'
 
@@ -25,6 +26,7 @@ export default function ProductDetailPage() {
   const [notifyError, setNotifyError] = useState('')
 
   const [product, setProduct] = useState<any | null>(null)
+  const { isFavorite, toggleFavorite } = useFavorites()
 
   function sanitizeHtmlBasic(html: string) {
     try {
@@ -215,7 +217,7 @@ export default function ProductDetailPage() {
               ))}
             </div>
             {/* Main image */}
-            <div className="flex-1">
+            <div className="flex-1 relative">
               <div className="aspect-square bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <img
                   src={product.images[selectedImageIndex] || product.image}
@@ -223,6 +225,14 @@ export default function ProductDetailPage() {
                   className="w-full h-full object-contain"
                 />
               </div>
+              <button
+                type="button"
+                onClick={()=> toggleFavorite(product.id)}
+                aria-label="Favoritar"
+                className={`absolute top-2 right-2 rounded-full p-2 backdrop-blur bg-white/80 dark:bg-gray-800/70 border ${isFavorite(product.id) ? 'text-red-500 border-red-300' : 'text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700'}`}
+              >
+                <FiHeart className={`w-5 h-5 ${isFavorite(product.id) ? 'fill-red-500' : ''}`} />
+              </button>
             </div>
           </div>
 
@@ -328,8 +338,8 @@ export default function ProductDetailPage() {
                   </div>
                 </div>
               )}
-              {/* Shipping calc */}
-              <div className="mb-6">
+              {/* Shipping calc (temporariamente desabilitado) */}
+              {false && (<div className="mb-6">
                 <label className="block text-sm font-semibold mb-2 dark:text-white">Calcular frete</label>
                 <div className="flex gap-2">
                   <input value={zip} onChange={(e)=> setZip(e.target.value)} placeholder="CEP" inputMode="numeric" className="flex-1 px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100" />
@@ -338,7 +348,7 @@ export default function ProductDetailPage() {
                 {!!shippingError && <div className="mt-2 text-xs text-red-600">{shippingError}</div>}
                 {shipping?.quotes && (
                   <div className="mt-3 space-y-2 text-sm">
-                    {shipping.quotes.map((q: any) => (
+                    {(shipping?.quotes || []).map((q: any) => (
                       <div key={q.code} className="flex items-center justify-between p-2 rounded border border-gray-200 dark:border-gray-700">
                         <span className="text-gray-700 dark:text-gray-300">{q.name || (q.code === '04014' ? 'SEDEX' : q.code === '04510' ? 'PAC' : q.code)}</span>
                         {q.error && q.error !== '0' ? (
@@ -350,7 +360,7 @@ export default function ProductDetailPage() {
                     ))}
                   </div>
                 )}
-              </div>
+              </div>)}
               {/* Shipping / returns */}
               {false && (<div className="space-y-2 mb-6">
                 <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">

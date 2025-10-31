@@ -16,7 +16,7 @@ export async function GET() {
   try {
     const prisma = await getPrisma()
     const items = await prisma.category.findMany({ orderBy: { name: 'asc' } })
-    const data = items.map((c: any) => ({ id: c.id, slug: c.slug, name: c.name }))
+    const data = items.map((c: any) => ({ id: c.id, slug: c.slug, name: c.name, description: c.description || '', image: c.image || '' }))
     return NextResponse.json({ ok: true, items: data })
   } catch (e: any) {
     console.error('GET /api/categories error', e)
@@ -32,17 +32,18 @@ export async function POST(req: NextRequest) {
     if (!name) return NextResponse.json({ ok: false, error: 'Nome � obrigat�rio' }, { status: 400 })
     const providedSlug = String(body?.slug || '').trim()
     const slug = slugify(providedSlug || name)
+    const description = body?.description ? String(body.description) : undefined
+    const image = body?.image ? String(body.image) : undefined
 
     const created = await prisma.category.upsert({
       where: { slug },
-      update: { name },
-      create: { name, slug },
+      update: { name, ...(description !== undefined && { description }), ...(image !== undefined && { image }) },
+      create: { name, slug, ...(description !== undefined && { description }), ...(image !== undefined && { image }) },
     })
 
-    return NextResponse.json({ ok: true, item: { id: created.id, slug: created.slug, name: created.name } })
+    return NextResponse.json({ ok: true, item: { id: created.id, slug: created.slug, name: created.name, description: created.description || '', image: created.image || '' } })
   } catch (e: any) {
     console.error('POST /api/categories error', e)
     return NextResponse.json({ ok: false, error: e?.message || 'failed' }, { status: 500 })
   }
 }
-

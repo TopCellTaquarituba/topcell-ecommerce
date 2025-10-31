@@ -20,12 +20,17 @@ export async function GET(req: NextRequest) {
     const prisma = await getPrisma()
     const { searchParams } = new URL(req.url)
     const q = searchParams.get('q') || undefined
+    const idsParam = searchParams.get('ids') || undefined
     const category = searchParams.get('category') || undefined
     const brand = searchParams.get('brand') || undefined
     const take = Math.min(100, parseNumber(searchParams.get('limit')) || 50)
     const skip = Math.max(0, parseNumber(searchParams.get('skip')) || 0)
 
     const where: any = {}
+    if (idsParam) {
+      const ids = idsParam.split(',').map((s) => s.trim()).filter(Boolean)
+      if (ids.length) where.id = { in: ids }
+    }
     if (q) where.OR = [{ name: { contains: q, mode: 'insensitive' } }, { description: { contains: q, mode: 'insensitive' } }]
     if (category) where.category = { is: { slug: category } }
     if (brand) where.brand = { is: { slug: brand } }

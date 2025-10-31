@@ -5,6 +5,7 @@ import { CartProvider } from '@/context/CartContext'
 import { ThemeProvider } from '@/context/ThemeContext'
 import { AuthProvider } from '@/context/AuthContext'
 import { ContentProvider } from '@/context/ContentContext'
+import { FavoritesProvider } from '@/context/FavoritesContext'
 import LayoutWrapper from '@/components/LayoutWrapper'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -25,11 +26,13 @@ export default function RootLayout({
         <AuthProvider>
           <ThemeProvider>
             <CartProvider>
-              <ContentProvider>
-                <LayoutWrapper>
-                  {children}
-                </LayoutWrapper>
-              </ContentProvider>
+              <FavoritesProvider>
+                <ContentProvider>
+                  <LayoutWrapper>
+                    {children}
+                  </LayoutWrapper>
+                </ContentProvider>
+              </FavoritesProvider>
             </CartProvider>
           </ThemeProvider>
         </AuthProvider>

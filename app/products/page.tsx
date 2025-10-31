@@ -25,7 +25,10 @@ export default function ProductsPage() {
 
   useEffect(() => {
     async function load() {
-      const res = await fetch('/api/products', { cache: 'no-store' })
+      const sp = new URLSearchParams()
+      if (category) sp.set('category', category)
+      const qs = sp.toString()
+      const res = await fetch(`/api/products${qs ? `?${qs}` : ''}`, { cache: 'no-store' })
       const json = await res.json()
       const items = (json.items || []).map((p: any) => ({
         id: p.id,
@@ -33,6 +36,7 @@ export default function ProductsPage() {
         price: Number(p.price),
         image: p.image,
         category: p.category || '',
+        categorySlug: p.categorySlug || '',
         brand: p.brand || 'Outros',
         description: p.description || '',
         rating: p.rating || 0,
@@ -41,7 +45,7 @@ export default function ProductsPage() {
       setAllProducts(items)
     }
     load()
-  }, [])
+  }, [category])
 
   // Keep filters in sync with query param changes
   useEffect(() => {
@@ -55,7 +59,7 @@ export default function ProductsPage() {
     // Category filter
     if (filters.categories.length > 0) {
       filtered = filtered.filter(product => 
-        filters.categories.includes(product.category)
+        filters.categories.includes(product.category) || filters.categories.includes(product.categorySlug)
       )
     }
 

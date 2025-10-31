@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { FiArrowLeft, FiPlus } from 'react-icons/fi'
 
-type Category = { id: string; slug: string; name: string }
+type Category = { id: string; slug: string; name: string; image?: string; description?: string }
 
 export default function CategoriesAdminPage() {
   const [items, setItems] = useState<Category[]>([])
@@ -13,6 +13,8 @@ export default function CategoriesAdminPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [image, setImage] = useState('')
+  const [description, setDescription] = useState('')
 
   const load = async () => {
     setLoading(true)
@@ -34,11 +36,13 @@ export default function CategoriesAdminPage() {
     setSaving(true)
     setError('')
     try {
-      const res = await fetch('/api/categories', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, slug: slug || undefined }) })
+      const res = await fetch('/api/categories', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, slug: slug || undefined, image: image || undefined, description: description || undefined }) })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data?.error || res.statusText || 'Falha ao salvar')
       setName('')
       setSlug('')
+      setImage('')
+      setDescription('')
       await load()
     } catch (e: any) {
       setError(e?.message || 'Erro ao salvar')
@@ -66,7 +70,7 @@ export default function CategoriesAdminPage() {
         <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Adicionar categoria</h2>
           {error && <div className="mb-3 bg-red-100 text-red-700 px-4 py-3 rounded">{error}</div>}
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
             <div>
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Nome</label>
               <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex.: Smartphones" required className="w-full input" />
@@ -74,6 +78,14 @@ export default function CategoriesAdminPage() {
             <div>
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Slug (opcional)</label>
               <input value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="ex.: smartphones" className="w-full input" />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Imagem (URL)</label>
+              <input value={image} onChange={(e) => setImage(e.target.value)} placeholder="https://..." className="w-full input" />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Descrição (opcional)</label>
+              <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Texto curto" className="w-full input" />
             </div>
             <button disabled={saving} type="submit" className="px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-60 text-white font-semibold rounded-lg flex items-center justify-center">
               <FiPlus className="w-4 h-4 mr-2" />
@@ -93,9 +105,13 @@ export default function CategoriesAdminPage() {
             <ul className="divide-y divide-gray-200 dark:divide-gray-700">
               {items.map((c) => (
                 <li key={c.id} className="py-3 flex items-center justify-between">
-                  <div>
-                    <div className="font-semibold text-gray-900 dark:text-white">{c.name}</div>
-                    <div className="text-xs text-gray-500">/{c.slug}</div>
+                  <div className="flex items-center gap-3">
+                    {c.image && (<img src={c.image} alt={c.name} className="w-14 h-10 object-cover rounded" />)}
+                    <div>
+                      <div className="font-semibold text-gray-900 dark:text-white">{c.name}</div>
+                      <div className="text-xs text-gray-500">/{c.slug}</div>
+                      {c.description && <div className="text-xs text-gray-500">{c.description}</div>}
+                    </div>
                   </div>
                 </li>
               ))}
@@ -107,4 +123,3 @@ export default function CategoriesAdminPage() {
     </div>
   )
 }
-

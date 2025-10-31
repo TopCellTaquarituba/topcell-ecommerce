@@ -1,89 +1,29 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi'
 
-interface Category {
-  id: string
-  name: string
-  description: string
-  image: string
-  href: string
-  icon: string
-}
-
-const categories: Category[] = [
-  {
-    id: '1',
-    name: 'Smartphones',
-    description: 'Os melhores smartphones',
-    image: 'https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=600',
-    href: '/products?category=smartphones',
-    icon: '📱'
-  },
-  {
-    id: '2',
-    name: 'Notebooks',
-    description: 'Potência e portabilidade',
-    image: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=600',
-    href: '/products?category=laptops',
-    icon: '💻'
-  },
-  {
-    id: '3',
-    name: 'Acessórios',
-    description: 'Compre e acessorize',
-    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600',
-    href: '/products?category=accessories',
-    icon: '🎧'
-  },
-  {
-    id: '4',
-    name: 'Tablets',
-    description: 'Produtividade em qualquer lugar',
-    image: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=600',
-    href: '/products?category=tablets',
-    icon: '📱'
-  },
-  {
-    id: '5',
-    name: 'Smart TVs',
-    description: 'Entretenimento em casa',
-    image: 'https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?w=600',
-    href: '/products',
-    icon: '📺'
-  },
-  {
-    id: '6',
-    name: 'Câmeras',
-    description: 'Capture momentos especiais',
-    image: 'https://images.unsplash.com/photo-1606983340126-99ab4feaa64a?w=600',
-    href: '/products',
-    icon: '📷'
-  },
-  {
-    id: '7',
-    name: 'Gaming',
-    description: 'Equipamentos para gamers',
-    image: 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?w=600',
-    href: '/products',
-    icon: '🎮'
-  },
-  {
-    id: '8',
-    name: 'Smart Home',
-    description: 'Automação residencial',
-    image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600',
-    href: '/products',
-    icon: '🏠'
-  }
-]
+type Category = { id: string; name: string; slug: string; description?: string; image?: string }
 
 export default function CategoryCarousel() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [showLeftArrow, setShowLeftArrow] = useState(false)
   const [showRightArrow, setShowRightArrow] = useState(true)
+  const [cats, setCats] = useState<Category[]>([])
+
+  // Load categories from API
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await fetch('/api/categories', { cache: 'no-store' })
+        const json = await res.json()
+        const items: Category[] = (json.items || []).map((c: any) => ({ id: c.id, name: c.name, slug: c.slug, description: c.description, image: c.image }))
+        setCats(items)
+      } catch {}
+    }
+    load()
+  }, [])
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
@@ -160,26 +100,21 @@ export default function CategoryCarousel() {
             className="flex gap-6 overflow-x-auto scrollbar-hide pb-4"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
-            {categories.map((category, index) => (
+            {(cats.length ? cats : []).map((category, index) => (
               <Link
                 key={category.id}
-                href={category.href}
+                href={`/products?category=${encodeURIComponent(category.slug)}`}
                 className="group flex-shrink-0 w-72 animate-fade-in"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 <div className="relative overflow-hidden rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 card-hover bg-white dark:bg-gray-800">
                   <div className="aspect-[4/3] relative">
                     <img
-                      src={category.image}
+                      src={category.image || 'https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=600'}
                       alt={category.name}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
-                    
-                    {/* Icon */}
-                    <div className="absolute top-4 right-4 bg-white/20 backdrop-blur-sm p-3 rounded-xl">
-                      <span className="text-3xl">{category.icon}</span>
-                    </div>
 
                     {/* Content */}
                     <div className="absolute bottom-0 left-0 right-0 p-6">
@@ -187,7 +122,7 @@ export default function CategoryCarousel() {
                         {category.name}
                       </h3>
                       <p className="text-sm text-gray-200">
-                        {category.description}
+                        {category.description || ''}
                       </p>
                     </div>
 
