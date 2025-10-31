@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import type { Review } from '@/lib/products'
 import { useCart } from '@/context/CartContext'
-import { FiShoppingCart, FiMinus, FiPlus, FiStar, FiTruck, FiShield } from 'react-icons/fi'
+import { FiShoppingCart, FiMinus, FiPlus, FiStar, FiTruck, FiShield, FiBell } from 'react-icons/fi'
 import Link from 'next/link'
 import Reviews from '@/components/Reviews'
 
@@ -20,6 +20,9 @@ export default function ProductDetailPage() {
   const [shipping, setShipping] = useState<{ package?: any; quotes?: any[] } | null>(null)
   const [shippingError, setShippingError] = useState('')
   const [shippingLoading, setShippingLoading] = useState(false)
+  const [notifyEmail, setNotifyEmail] = useState('')
+  const [notifyStatus, setNotifyStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+  const [notifyError, setNotifyError] = useState('')
 
   const [product, setProduct] = useState<any | null>(null)
 
@@ -49,6 +52,15 @@ export default function ProductDetailPage() {
                 .map((s: any) => [String(s.key), s.value])
             )
           : (p?.specs && typeof p.specs === 'object' ? p.specs : {})
+        const cfsObj = Array.isArray(p?.customFields)
+          ? Object.fromEntries(
+              (p.customFields as any[])
+                .filter((s: any) => s && typeof s.key === 'string')
+                .map((s: any) => [String(s.key), s.value])
+            )
+          : (p?.customFields && typeof p.customFields === 'object' ? p.customFields : {})
+        const allSpecs = { ...specsObj, ...cfsObj }
+        const stockNum = Number(p.stock || 0)
         setProduct({
           id: p.id,
           name: p.name,
@@ -59,8 +71,9 @@ export default function ProductDetailPage() {
           category: p.category || '',
           rating: p.rating || 0,
           description: p.description || '',
-          inStock: Boolean(p.inStock || (Number(p.stock || 0) > 0)),
-          specifications: specsObj,
+          inStock: stockNum > 0,
+          stock: stockNum,
+          specifications: allSpecs,
         })
       } else {
         setProduct(null)
@@ -107,6 +120,25 @@ export default function ProductDetailPage() {
       addToCart({ id: product.id, name: product.name, price: product.price, image: product.image })
     }
     router.push('/checkout')
+  }
+
+  const handleNotify = async () => {
+    if (!notifyEmail) return
+    try {
+      setNotifyStatus('sending')
+      setNotifyError('')
+      const res = await fetch('/api/notify-restock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId: product?.id, email: notifyEmail }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || !data?.ok) throw new Error(data?.error || 'Falha ao enviar')
+      setNotifyStatus('sent')
+    } catch (e: any) {
+      setNotifyStatus('error')
+      setNotifyError(e?.message || 'Erro ao cadastrar notificação')
+    }
   }
 
   const handleCalcShipping = async () => {
@@ -247,6 +279,12 @@ export default function ProductDetailPage() {
                   <div className="text-green-600 dark:text-green-400 text-sm font-semibold">{discount}% OFF</div>
                 )}
               </div>
+
+              {!product.inStock && (
+                <div className="mb-6 p-3 rounded border border-yellow-300 bg-yellow-50 text-yellow-800 dark:border-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-200">
+                  Indisponível no momento
+                </div>
+              )}
               {/* Installments + payment methods */}
               <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Em até 10x sem juros</div>
               <button
@@ -314,7 +352,7 @@ export default function ProductDetailPage() {
                 )}
               </div>
               {/* Shipping / returns */}
-              <div className="space-y-2 mb-6">
+              {false && (<div className="space-y-2 mb-6">
                 <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                   <FiTruck className="w-5 h-5 text-primary-600" />
                   <span>Frete grátis para a sua região</span>
@@ -323,28 +361,49 @@ export default function ProductDetailPage() {
                   <FiShield className="w-5 h-5 text-primary-600" />
                   <span>Devolução grátis em até 30 dias</span>
                 </div>
-              </div>
+              </div>)}
               {/* Quantity */}
               <div className="mb-4">
                 <label className="block text-sm font-semibold mb-2 dark:text-white">Quantidade</label>
                 <div className="flex items-center gap-3">
                   <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded-lg">
-                    <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="p-2"><FiMinus className="w-5 h-5" /></button>
+                    <button disabled={!product.inStock} onClick={() => setQuantity(Math.max(1, quantity - 1))} className="p-2 disabled:opacity-50"><FiMinus className="w-5 h-5" /></button>
                     <span className="px-5 py-2 font-semibold dark:text-white">{quantity}</span>
-                    <button onClick={() => setQuantity(quantity + 1)} className="p-2"><FiPlus className="w-5 h-5" /></button>
+                    <button disabled={!product.inStock} onClick={() => setQuantity(quantity + 1)} className="p-2 disabled:opacity-50"><FiPlus className="w-5 h-5" /></button>
                   </div>
                   <span className="text-xs text-gray-600 dark:text-gray-400">{product.inStock ? 'Em estoque' : 'Fora de estoque'}</span>
                 </div>
               </div>
-              {/* Actions */}
-              <div className="flex flex-col gap-3">
-                <button onClick={handleAddToCart} className="w-full bg-primary-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-700 transition flex items-center justify-center gap-2">
-                  <FiShoppingCart className="w-5 h-5" /> Adicionar ao carrinho
-                </button>
-                <button onClick={handleBuyNow} className="w-full border-2 border-primary-600 text-primary-600 dark:text-primary-400 px-6 py-3 rounded-lg font-semibold hover:bg-primary-50 dark:hover:bg-primary-900/20 transition">
-                  Comprar agora
-                </button>
-              </div>
+              {/* Actions / Notify */}
+              {product.inStock ? (
+                <div className="flex flex-col gap-3">
+                  <button onClick={handleAddToCart} className="w-full bg-primary-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-700 transition flex items-center justify-center gap-2">
+                    <FiShoppingCart className="w-5 h-5" /> Adicionar ao carrinho
+                  </button>
+                  <button onClick={handleBuyNow} className="w-full border-2 border-primary-600 text-primary-600 dark:text-primary-400 px-6 py-3 rounded-lg font-semibold hover:bg-primary-50 dark:hover:bg-primary-900/20 transition">
+                    Comprar agora
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <div className="text-sm text-gray-700 dark:text-gray-300">Avise-me quando chegar</div>
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      placeholder="seu@email.com"
+                      value={notifyEmail}
+                      onChange={(e)=> setNotifyEmail(e.target.value)}
+                      className="flex-1 px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
+                    />
+                    <button type="button" onClick={handleNotify} disabled={notifyStatus==='sending' || !notifyEmail}
+                      className="px-4 py-2 rounded-lg bg-primary-600 text-white disabled:opacity-60 flex items-center gap-2">
+                      <FiBell className="w-5 h-5" /> {notifyStatus==='sending' ? 'Enviando...' : 'Avisar'}
+                    </button>
+                  </div>
+                  {notifyStatus==='sent' && <div className="text-green-600 text-xs">Tudo certo! Vamos avisar quando repor.</div>}
+                  {notifyStatus==='error' && <div className="text-red-600 text-xs">{notifyError || 'Falha ao enviar, tente novamente.'}</div>}
+                </div>
+              )}
             </div>
           </div>
         </aside>

@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { FiShoppingCart, FiSearch, FiMenu, FiX, FiSun, FiMoon, FiUser, FiLogOut, FiPackage } from 'react-icons/fi'
 import { useCart } from '@/context/CartContext'
 import { useTheme } from '@/context/ThemeContext'
@@ -25,11 +26,14 @@ function ThemeToggle() {
 }
 
 export default function Header() {
+  const router = useRouter()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const { items } = useCart()
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0)
   const [customerName, setCustomerName] = useState<string | null>(null)
   const [accountOpen, setAccountOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [searchText, setSearchText] = useState('')
 
   useEffect(() => {
     // check session
@@ -70,7 +74,7 @@ export default function Header() {
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center space-x-4">
             <ThemeToggle />
-            <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition">
+            <button onClick={() => setSearchOpen(true)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition" aria-label="Pesquisar">
               <FiSearch className="w-6 h-6 text-gray-700 dark:text-gray-300" />
             </button>
             <div className="relative">
@@ -108,17 +112,23 @@ export default function Header() {
             </Link>
           </div>
 
-          {/* Mobile Menu Button */}
-          <button
-            className="md:hidden p-2"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
-            {isMenuOpen ? (
-              <FiX className="w-6 h-6" />
-            ) : (
-              <FiMenu className="w-6 h-6" />
-            )}
-          </button>
+          {/* Mobile Actions */}
+          <div className="md:hidden flex items-center gap-2">
+            <button onClick={() => setSearchOpen(true)} className="p-2" aria-label="Pesquisar">
+              <FiSearch className="w-6 h-6" />
+            </button>
+            <button
+              className="p-2"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              aria-label="Menu"
+            >
+              {isMenuOpen ? (
+                <FiX className="w-6 h-6" />
+              ) : (
+                <FiMenu className="w-6 h-6" />
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Mobile Menu */}
@@ -158,6 +168,33 @@ export default function Header() {
           </div>
         )}
       </div>
+
+      {/* Search overlay */}
+      {searchOpen && (
+        <div className="absolute inset-0 bg-black/30 dark:bg-black/50" onClick={() => setSearchOpen(false)}>
+          <div className="container-custom">
+            <form
+              onSubmit={(e)=>{ e.preventDefault(); const q = searchText.trim(); setSearchOpen(false); if(q) router.push(`/products?q=${encodeURIComponent(q)}`) }}
+              className="relative mt-4 md:mt-6"
+              onClick={(e)=> e.stopPropagation()}
+            >
+              <div className="flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 shadow">
+                <FiSearch className="w-5 h-5 text-gray-500" />
+                <input
+                  autoFocus
+                  value={searchText}
+                  onChange={(e)=> setSearchText(e.target.value)}
+                  placeholder="Buscar produtos, marcas..."
+                  className="flex-1 bg-transparent outline-none text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
+                />
+                <button type="button" onClick={()=> setSearchOpen(false)} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Fechar">
+                  <FiX className="w-5 h-5" />
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </header>
   )
 }

@@ -32,6 +32,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: 'missing MP_ACCESS_TOKEN' }, { status: 500 })
     }
 
+    // Optional signature verification (x-signature)
+    try {
+      const secret = process.env.MP_WEBHOOK_SECRET
+      const signature = req.headers.get('x-signature') || ''
+      const reqId = req.headers.get('x-request-id') || ''
+      const tsMatch = /ts=(\d+)/.exec(signature || '')
+      const v1Match = /v1=([a-f0-9]+)/.exec(signature || '')
+      const ts = tsMatch ? tsMatch[1] : undefined
+      if (secret && v1Match && ts) {
+        // Build text per MP docs: id:<data.id>;request-id:<x-request-id>;ts:<ts>
+        const content = `id:${paymentId};request-id:${reqId};ts:${ts}`
+        const expected = require('crypto').createHmac('sha256', secret).update(content).digest('hex')
+        if (expected !== v1Match[1]) {
+          return NextResponse.json({ ok: false, error: 'invalid_signature' }, { status: 401 })
+        }
+      }
+    } catch { /* ignore and continue without signature check */ }
+
     if (type === 'payment' && paymentId) {
       const client = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN! })
       const payment = new Payment(client)

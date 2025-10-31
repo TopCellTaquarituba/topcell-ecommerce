@@ -18,6 +18,15 @@ export async function POST(req: NextRequest) {
     const items = Array.isArray(json?.data) ? json.data : (json?.data ? [json.data] : [])
 
     const upserts = [] as Promise<any>[]
+    const slugify = (input?: string) =>
+      (input || '')
+        .toString()
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)+/g, '')
+
     for (const p of items) {
       const mapped = mapBlingProductToLocal(p)
       if (!mapped.externalId) continue
@@ -57,6 +66,27 @@ export async function POST(req: NextRequest) {
           }
         }
       }
+      const categoryData = mapped.categoryName
+        ? {
+            category: {
+              connectOrCreate: {
+                where: { slug: slugify(mapped.categoryName) },
+                create: { slug: slugify(mapped.categoryName), name: mapped.categoryName },
+              },
+            },
+          }
+        : {}
+      const brandData = mapped.brandName
+        ? {
+            brand: {
+              connectOrCreate: {
+                where: { slug: slugify(mapped.brandName) },
+                create: { slug: slugify(mapped.brandName), name: mapped.brandName },
+              },
+            },
+          }
+        : {}
+
       upserts.push(
         prisma.product.upsert({
           where: { externalId: mapped.externalId },
@@ -71,6 +101,8 @@ export async function POST(req: NextRequest) {
             ...(mapped.lengthCm != null ? { lengthCm: mapped.lengthCm } : {}),
             ...(mapped.heightCm != null ? { heightCm: mapped.heightCm } : {}),
             ...(mapped.widthCm != null ? { widthCm: mapped.widthCm } : {}),
+            ...categoryData,
+            ...brandData,
           },
           create: {
             externalId: mapped.externalId,
@@ -85,6 +117,8 @@ export async function POST(req: NextRequest) {
             ...(mapped.lengthCm != null ? { lengthCm: mapped.lengthCm } : {}),
             ...(mapped.heightCm != null ? { heightCm: mapped.heightCm } : {}),
             ...(mapped.widthCm != null ? { widthCm: mapped.widthCm } : {}),
+            ...categoryData,
+            ...brandData,
           },
         }).then(async (prod: { id: string }) => {
           if (mapped.stockQty != null) {

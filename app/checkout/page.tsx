@@ -4,12 +4,12 @@ import { useState, useEffect } from 'react'
 import { useCart } from '@/context/CartContext'
 import { useRouter } from 'next/navigation'
 import CEPInput, { CEPData } from '@/components/CEPInput'
-import { FiCheck, FiCreditCard, FiTruck, FiLock, FiMapPin } from 'react-icons/fi'
+import { FiCheck, FiTruck, FiLock, FiMapPin } from 'react-icons/fi'
 
 export default function CheckoutPage() {
   const { items, getTotalPrice, clearCart } = useCart()
   const router = useRouter()
-  const [step, setStep] = useState<'shipping' | 'payment' | 'review'>('shipping')
+  const [step, setStep] = useState<'shipping' | 'review'>('shipping')
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -21,7 +21,6 @@ export default function CheckoutPage() {
     neighborhood: '',
     city: '',
     state: '',
-    paymentMethod: 'credit',
   })
 
   useEffect(() => {
@@ -54,14 +53,7 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (step === 'shipping') {
-      setStep('payment')
-      return
-    }
-    if (step === 'payment') {
-      setStep('review')
-      return
-    }
+    if (step === 'shipping') { setStep('review'); return }
     // Create order then abrir tela de pagamento (Bricks)
     try {
       const payload = {
@@ -108,19 +100,6 @@ export default function CheckoutPage() {
             </div>
             <span className={`ml-2 ${step === 'shipping' ? 'text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400'}`}>
               Envio
-            </span>
-          </div>
-          <div className="flex-1 h-1 bg-gray-200 dark:bg-gray-700"></div>
-          <div className="flex items-center">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-              step === 'payment' 
-                ? 'bg-primary-600 text-white' 
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-            }`}>
-              <FiCreditCard className="w-5 h-5" />
-            </div>
-            <span className={`ml-2 ${step === 'payment' ? 'text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400'}`}>
-              Pagamento
             </span>
           </div>
           <div className="flex-1 h-1 bg-gray-200 dark:bg-gray-700"></div>
@@ -271,26 +250,7 @@ export default function CheckoutPage() {
             {/* Payment and Review steps remain similar but use formData for all fields */}
             {/* (keeping similar structure as before for brevity) */}
             
-            {step === 'payment' && (
-              <div className="space-y-6">
-                <h2 className="text-2xl font-bold mb-2 dark:text-white">Pagamento</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold mb-2 text-gray-700 dark:text-gray-300">Forma de pagamento</label>
-                    <select
-                      name="paymentMethod"
-                      value={formData.paymentMethod}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    >
-                      <option value="credit">Cartão de crédito</option>
-                      <option value="pix">Pix</option>
-                      <option value="boleto">Boleto</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Etapa de pagamento removida: seleção ocorrerá no Bricks do Mercado Pago */}
 
             {step === 'review' && (
               <div className="space-y-6">
@@ -305,11 +265,7 @@ export default function CheckoutPage() {
                 </div>
                 <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
                   <h3 className="font-semibold mb-2 dark:text-white">Pagamento</h3>
-                  <p className="text-sm text-gray-700 dark:text-gray-300">
-                    {formData.paymentMethod === 'credit' && 'Cartão de crédito'}
-                    {formData.paymentMethod === 'pix' && 'Pix'}
-                    {formData.paymentMethod === 'boleto' && 'Boleto bancário'}
-                  </p>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">Selecionar na próxima etapa (Mercado Pago)</p>
                 </div>
                 <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
                   <h3 className="font-semibold mb-4 dark:text-white">Itens</h3>
@@ -339,7 +295,7 @@ export default function CheckoutPage() {
               {step !== 'shipping' && (
                 <button
                   type="button"
-                  onClick={() => setStep(step === 'payment' ? 'shipping' : 'payment')}
+                  onClick={() => setStep('shipping')}
                   className="px-8 py-3 border border-gray-300 dark:border-gray-600 rounded-lg font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition"
                 >
                   Voltar

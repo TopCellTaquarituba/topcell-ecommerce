@@ -6,6 +6,7 @@ import AboutSectionDynamic from '@/components/AboutSectionDynamic'
 import FAQSection from '@/components/FAQSection'
 import MapSection from '@/components/MapSection'
 import { getPrisma } from '@/lib/prisma'
+import { getShopifyProducts } from '@/lib/shopify'
 
 type HomeProps = {
   searchParams?: { page?: string }
@@ -31,6 +32,7 @@ export default async function HomePage({ searchParams }: HomeProps) {
   let featuredProducts: any[] = []
   let latestProducts: any[] = []
   let totalProducts = 0
+  let shopifyTeaser: any[] = []
 
   try {
     const prisma = await getPrisma()
@@ -45,6 +47,11 @@ export default async function HomePage({ searchParams }: HomeProps) {
   } catch (e) {
     console.error('Falha ao carregar produtos para a home', e)
   }
+
+  // Shopify teaser (headless POC). Ignora erros silenciosamente quando não configurado.
+  try {
+    shopifyTeaser = await getShopifyProducts(4)
+  } catch {}
 
   const totalPages = Math.max(1, Math.ceil(totalProducts / pageSize))
   const hasPrev = page > 1
@@ -122,6 +129,27 @@ export default async function HomePage({ searchParams }: HomeProps) {
           )}
         </div>
       </section>
+
+      {shopifyTeaser.length > 0 && (
+        <section className="py-16 bg-gray-50 dark:bg-gray-800">
+          <div className="container-custom">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-3xl font-bold dark:text-white">Também no Shopify</h2>
+              <Link href="/shopify" className="text-primary-600 hover:text-primary-700 font-semibold">Ver catálogo Shopify →</Link>
+            </div>
+            <div className="products-grid">
+              {shopifyTeaser.map((p: any) => (
+                <Link key={p.id} href={`/shopify/${p.handle}`} className="block bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  {p.featuredImage?.url && <img src={p.featuredImage.url} alt={p.featuredImage?.altText || p.title} className="w-full h-40 object-cover rounded" />}
+                  <div className="mt-3 font-semibold dark:text-white">{p.title}</div>
+                  <div className="text-primary-600">R$ {Number(p.priceRange?.minVariantPrice?.amount || 0).toFixed(2).replace('.', ',')}</div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="py-16 bg-primary-600 dark:bg-primary-800 text-white transition-colors duration-300">
         <div className="container-custom text-center">

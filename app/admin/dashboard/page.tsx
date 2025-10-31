@@ -204,11 +204,12 @@ export default function Dashboard() {
   return (
     <div className={`min-h-screen flex ${isDark ? 'bg-[#060b1d] text-slate-100' : 'bg-slate-100 text-slate-900'}`}>
       <aside
-        className={`group/sidebar hidden md:flex flex-col w-20 hover:w-60 transition-all duration-300 border-r ${
+        className={`group/sidebar hidden md:flex flex-none flex-col w-20 hover:w-60 transition-[width] duration-300 ease-in-out border-r relative z-10 overflow-hidden ${
           isDark
-            ? 'bg-gradient-to-b from-indigo-900/80 via-[#0e1530] to-[#050720] border-slate-800/60 shadow-xl text-slate-100'
-            : 'bg-white border-slate-200 shadow-lg text-slate-700'
+            ? 'bg-gradient-to-b from-indigo-900/80 via-[#0e1530] to-[#050720] border-slate-800/60 shadow-md text-slate-100'
+            : 'bg-white border-slate-200 shadow-sm text-slate-700'
         }`}
+        style={{ willChange: 'width' }}
       >
         <div className="flex items-center gap-3 px-4 py-6">
           <div

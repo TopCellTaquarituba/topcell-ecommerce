@@ -9,6 +9,7 @@ import { FiGrid, FiList } from 'react-icons/fi'
 export default function ProductsPage() {
   const searchParams = useSearchParams()
   const category = searchParams.get('category')
+  const qParam = searchParams.get('q') || ''
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [filters, setFilters] = useState<FilterState>({
@@ -17,7 +18,7 @@ export default function ProductsPage() {
     priceRange: [0, 10000],
     minRating: 0,
     sortBy: 'relevance',
-    searchQuery: ''
+    searchQuery: qParam
   })
 
   const [allProducts, setAllProducts] = useState<any[]>([])
@@ -32,12 +33,20 @@ export default function ProductsPage() {
         price: Number(p.price),
         image: p.image,
         category: p.category || '',
+        brand: p.brand || 'Outros',
+        description: p.description || '',
         rating: p.rating || 0,
+        createdAt: p.createdAt,
       }))
       setAllProducts(items)
     }
     load()
   }, [])
+
+  // Keep filters in sync with query param changes
+  useEffect(() => {
+    setFilters((prev) => ({ ...prev, searchQuery: qParam }))
+  }, [qParam])
 
   // Apply filters
   const filteredProducts = useMemo(() => {
@@ -73,7 +82,8 @@ export default function ProductsPage() {
     if (filters.searchQuery) {
       filtered = filtered.filter(product =>
         product.name.toLowerCase().includes(filters.searchQuery.toLowerCase()) ||
-        product.description.toLowerCase().includes(filters.searchQuery.toLowerCase())
+        (product.description || '').toLowerCase().includes(filters.searchQuery.toLowerCase()) ||
+        (product.brand || '').toLowerCase().includes(filters.searchQuery.toLowerCase())
       )
     }
 

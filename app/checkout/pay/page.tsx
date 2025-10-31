@@ -12,6 +12,8 @@ export default function PayPage() {
   const [amount, setAmount] = useState<number>(0)
   const [ready, setReady] = useState(false)
   const [pixData, setPixData] = useState<{ qr_code?: string; qr_code_base64?: string; ticket_url?: string } | null>(null)
+  const [payError, setPayError] = useState<string | null>(null)
+  const [payDetails, setPayDetails] = useState<any>(null)
   const publicKey = process.env.NEXT_PUBLIC_MP_PUBLIC_KEY || ''
   const containerId = 'payment-brick-container'
   const loadedRef = useRef(false)
@@ -33,7 +35,7 @@ export default function PayPage() {
     const mp = new window.MercadoPago(publicKey, { locale: 'pt-BR' })
     const bricksBuilder = mp.bricks()
     await bricksBuilder.create('payment', containerId, {
-      initialization: { amount, payer: { email: 'cliente@example.com' } },
+      initialization: { amount, payer: { email: '', entityType: 'individual' } },
       customization: {
         visual: { style: { theme: 'default' } },
         // Exibir Pix (bankTransfer) e Cartão; valores: 'all' | false
@@ -46,9 +48,15 @@ export default function PayPage() {
           alert('Falha ao carregar o componente de pagamento. Verifique as credenciais e tente novamente.')
         },
         onSubmit: async ({ formData }: any) => {
+          setPayError(null); setPayDetails(null)
           const res = await fetch('/api/mp/pay', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderId, formData }) })
-          const json = await res.json()
-          if (!res.ok || !json?.ok) throw new Error(json?.error || 'Pagamento falhou')
+          const json = await res.json().catch(()=>({}))
+          if (!res.ok || !json?.ok) {
+            setPayError(json?.error || 'Pagamento falhou')
+            setPayDetails(json?.details || null)
+            console.error('Pagamento 400:', json)
+            return
+          }
           if (json?.pix) {
             setPixData(json.pix)
             return
@@ -77,6 +85,15 @@ export default function PayPage() {
         <div className="mb-4 p-3 rounded border border-gray-200 bg-gray-50 text-gray-700">Carregando valor do pedido…</div>
       )}
       <div id={containerId} className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700" />
+      {payError && (
+        <div className="mt-4 p-3 rounded border border-red-300 bg-red-50 text-red-800 text-sm">
+          <div className="font-semibold">Falha ao processar pagamento</div>
+          <div className="mt-1">{payError}</div>
+          {payDetails && (
+            <pre className="mt-2 whitespace-pre-wrap text-xs opacity-80">{JSON.stringify(payDetails, null, 2)}</pre>
+          )}
+        </div>
+      )}
       {pixData && (
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="border rounded-lg p-4 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">

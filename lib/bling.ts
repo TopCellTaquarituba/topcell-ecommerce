@@ -150,6 +150,50 @@ export function mapBlingProductToLocal(p: any) {
   const image = pickImageUrl(p) || ''
   const descricaoCurta = src?.descricaoCurta || src?.descricao || ''
   const descricaoComplementar = src?.descricaoComplementar || ''
+  const normalize = (s?: any) => (typeof s === 'string' ? s.trim() : '')
+  const getCategoryName = (): string | undefined => {
+    const c = src?.categoria || src?.categoria_produto || src?.grupoProduto || src?.grupo || src?.categoriaId
+    if (!c) return undefined
+    if (typeof c === 'string') return normalize(c)
+    if (typeof c === 'object') return normalize(c.nome || c.descricao || c.description || c.name || c.titulo)
+    return undefined
+  }
+  const getBrandName = (): string | undefined => {
+    const b = src?.marca || src?.brand || src?.fabricante
+    const direct = normalize(b)
+    if (direct) return direct
+    const candidates =
+      src?.camposCustomizados ||
+      src?.campos_customizados ||
+      src?.camposPersonalizados ||
+      src?.campos ||
+      src?.customFields
+    if (Array.isArray(candidates)) {
+      for (const it of candidates) {
+        const k = normalize(it?.nome || it?.name || it?.campo || it?.key)
+        if (k && k.toLowerCase() === 'marca') {
+          const v = normalize(it?.valor || it?.value)
+          if (v) return v
+        }
+      }
+    } else if (candidates && typeof candidates === 'object') {
+      const v = normalize(candidates?.marca || candidates?.Marca)
+      if (v) return v
+    }
+    // Try tags like "Marca: XYZ"
+    const tags = src?.tags || src?.etiquetas
+    const getTagText = (t: any) => normalize(typeof t === 'string' ? t : t?.nome || t?.name || t?.descricao)
+    if (Array.isArray(tags)) {
+      for (const t of tags) {
+        const text = getTagText(t)
+        const m = /marca\s*:\s*(.+)/i.exec(text)
+        if (m && m[1]) return normalize(m[1])
+      }
+    }
+    return undefined
+  }
+  const categoryName = getCategoryName()
+  const brandName = getBrandName()
   const htmlToText = (s: string) => {
     if (!s) return ''
     let t = String(s)
@@ -173,6 +217,9 @@ export function mapBlingProductToLocal(p: any) {
     lengthCm: src?.comprimento ? Math.round(Number(src.comprimento)) : undefined,
     heightCm: src?.altura ? Math.round(Number(src.altura)) : undefined,
     widthCm: src?.largura ? Math.round(Number(src.largura)) : undefined,
+    // Hints to persist relations later
+    categoryName,
+    brandName,
   }
 }
 
