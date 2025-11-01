@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { FiArrowLeft, FiDownload, FiFilter } from 'react-icons/fi'
 
@@ -84,8 +84,7 @@ export default function SalesAdminPage() {
     sp.set('pageSize', String(pageSize))
     return sp.toString()
   }, [from, to, status, category, q, minTotal, maxTotal, page, pageSize])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true)
     try {
       const res = await fetch(`/api/orders?${query}`, { cache: 'no-store' })
@@ -96,9 +95,9 @@ export default function SalesAdminPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [query])
 
-  useEffect(() => { fetchData() }, [query])
+  useEffect(() => { fetchData() }, [fetchData])
 
   const exportCsv = () => {
     if (!data) return
@@ -285,4 +284,3 @@ export default function SalesAdminPage() {
     </div>
   )
 }
-

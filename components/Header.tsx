@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { FiShoppingCart, FiSearch, FiMenu, FiX, FiSun, FiMoon, FiUser, FiLogOut, FiPackage, FiHeart } from 'react-icons/fi'
 import { useCart } from '@/context/CartContext'
@@ -34,6 +34,7 @@ export default function Header() {
   const [accountOpen, setAccountOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchText, setSearchText] = useState('')
+  const accountMenuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     // check session
@@ -42,6 +43,17 @@ export default function Header() {
       if (j?.authenticated && j?.customer?.name) setCustomerName(j.customer.name as string)
     }).catch(() => {})
   }, [])
+
+  // Close account menu on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (accountMenuRef.current && !accountMenuRef.current.contains(event.target as Node)) {
+        setAccountOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [accountMenuRef])
 
   return (
     <header className="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-50 transition-colors duration-300">
@@ -80,13 +92,13 @@ export default function Header() {
             <Link href="/favorites" className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition" aria-label="Favoritos">
               <FiHeart className="w-6 h-6 text-gray-700 dark:text-gray-300" />
             </Link>
-            <div className="relative">
+            <div className="relative" ref={accountMenuRef}>
               <button onClick={() => setAccountOpen((v)=>!v)} className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition" aria-label="Minha conta">
                 <FiUser className="w-6 h-6 text-gray-700 dark:text-gray-300" />
                 {customerName && <span className="text-gray-700 dark:text-gray-200 text-sm max-w-[140px] truncate">{customerName}</span>}
               </button>
               {accountOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-20">
+                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-20 animate-fade-in-fast">
                   {customerName ? (
                     <>
                       <Link href="/favorites" className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700">
@@ -207,4 +219,3 @@ export default function Header() {
     </header>
   )
 }
-

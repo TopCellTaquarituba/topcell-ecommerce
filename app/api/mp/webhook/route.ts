@@ -1,96 +1,78 @@
 import { NextRequest, NextResponse } from 'next/server'
-export const runtime = 'nodejs'
 import { MercadoPagoConfig, Payment } from 'mercadopago'
 import { getPrisma } from '@/lib/prisma'
-import { sendEmail } from '@/lib/email'
+import { exportOrderToBling } from '@/lib/bling' // Criaremos este arquivo a seguir
 
-function mapStatus(mpStatus: string): string {
-  switch (mpStatus) {
-    case 'approved':
-      return 'paid'
-    case 'pending':
-      return 'pending'
-    case 'in_process':
-      return 'processing'
-    case 'rejected':
-      return 'canceled'
-    default:
-      return 'pending'
-  }
-}
+const client = new MercadoPagoConfig({
+  accessToken: process.env.MP_ACCESS_TOKEN!,
+})
 
 export async function POST(req: NextRequest) {
   try {
-    const prisma = await getPrisma()
-    const url = new URL(req.url)
-    // MP sometimes sends data on query and sometimes in body
-    const body = await req.json().catch(() => ({} as any))
-    const type = url.searchParams.get('type') || body?.type
-    const paymentId = url.searchParams.get('data.id') || body?.data?.id || body?.id
+    const body = await req.json()
+    const { type, data } = body
 
-    if (!process.env.MP_ACCESS_TOKEN) {
-      return NextResponse.json({ ok: false, error: 'missing MP_ACCESS_TOKEN' }, { status: 500 })
-    }
-
-    // Optional signature verification (x-signature)
-    try {
-      const secret = process.env.MP_WEBHOOK_SECRET
-      const signature = req.headers.get('x-signature') || ''
-      const reqId = req.headers.get('x-request-id') || ''
-      const tsMatch = /ts=(\d+)/.exec(signature || '')
-      const v1Match = /v1=([a-f0-9]+)/.exec(signature || '')
-      const ts = tsMatch ? tsMatch[1] : undefined
-      if (secret && v1Match && ts) {
-        // Build text per MP docs: id:<data.id>;request-id:<x-request-id>;ts:<ts>
-        const content = `id:${paymentId};request-id:${reqId};ts:${ts}`
-        const expected = require('crypto').createHmac('sha256', secret).update(content).digest('hex')
-        if (expected !== v1Match[1]) {
-          return NextResponse.json({ ok: false, error: 'invalid_signature' }, { status: 401 })
-        }
-      }
-    } catch { /* ignore and continue without signature check */ }
-
-    if (type === 'payment' && paymentId) {
-      const client = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN! })
+    // Processar apenas notificações de pagamento
+    if (type === 'payment' && data?.id) {
+      const paymentId = data.id
       const payment = new Payment(client)
-      const result = await payment.get({ id: String(paymentId) })
-      const status = mapStatus((result as any)?.status || '')
-      const extRef = (result as any)?.external_reference as string | undefined
-      if (extRef) {
-        const updated = await prisma.order.update({ where: { id: extRef }, data: { status } }).catch(() => null)
-        if (updated) {
-          const customer = updated.customerId ? await prisma.customer.findUnique({ where: { id: updated.customerId } }) : null
-          const to = updated.shippingEmail || customer?.email
-          if (to) {
-            const subject = status === 'paid' ? `Pagamento aprovado - Pedido #${updated.number ?? updated.id}` : 
-                             status === 'pending' ? `Pagamento em análise - Pedido #${updated.number ?? updated.id}` :
-                             status === 'canceled' ? `Pagamento não aprovado - Pedido #${updated.number ?? updated.id}` : `Atualização do Pedido #${updated.number ?? updated.id}`
-            const total = Number(updated.total || 0).toFixed(2).replace('.', ',')
-            const html = `
-              <div style="font-family:Arial,sans-serif;line-height:1.5">
-                <h2 style="margin:0 0 12px">${subject}</h2>
-                <p>Olá,</p>
-                <p>Recebemos uma atualização do seu pagamento no Mercado Pago.</p>
-                <ul>
-                  <li><strong>Pedido:</strong> ${updated.number ?? updated.id}</li>
-                  <li><strong>Status:</strong> ${status}</li>
-                  <li><strong>Total:</strong> R$ ${total}</li>
-                </ul>
-                <p>Você pode acompanhar em: <a href="${process.env.BASE_URL || ''}/orders">Meus pedidos</a></p>
-              </div>
-            `
-            await sendEmail({ to, subject, html }).catch(()=>({ ok:false }))
-          }
+      const paymentInfo = await payment.get({ id: paymentId })
+
+      if (!paymentInfo || !paymentInfo.external_reference) {
+        console.warn(`Webhook MP: Pagamento ${paymentId} sem referência externa.`)
+        return NextResponse.json({ status: 'ok' })
+      }
+
+      const orderId = paymentInfo.external_reference
+      const prisma = await getPrisma()
+
+      // Encontrar o pedido no nosso banco de dados
+      const order = await prisma.order.findUnique({
+        where: { id: orderId },
+        include: {
+          customer: true,
+          items: { include: { product: true } },
+        },
+      })
+
+      if (!order) {
+        console.error(`Webhook MP: Pedido com ID ${orderId} não encontrado.`)
+        return NextResponse.json({ status: 'ok' })
+      }
+
+      // Mapear status do MP para o status do nosso sistema
+      let newStatus = order.status
+      switch (paymentInfo.status) {
+        case 'approved':
+          newStatus = 'paid'
+          break
+        case 'in_process':
+          newStatus = 'pending'
+          break
+        case 'rejected':
+        case 'cancelled':
+          newStatus = 'cancelled'
+          break;
+      }
+
+      // Atualizar o status do pedido se ele mudou
+      if (order.status !== newStatus) {
+        await prisma.order.update({
+          where: { id: orderId },
+          data: { status: newStatus },
+        })
+
+        // Se o pedido foi pago, exportar para o Bling
+        if (newStatus === 'paid') {
+          await exportOrderToBling(order)
         }
       }
     }
-    return NextResponse.json({ ok: true })
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message || 'failed' }, { status: 200 })
-  }
-}
 
-export async function GET(req: NextRequest) {
-  // MP can ping GET as a verification step
-  return NextResponse.json({ ok: true })
+    return NextResponse.json({ status: 'received' })
+
+  } catch (error: any) {
+    console.error('Erro no webhook do Mercado Pago:', error)
+    return NextResponse.json({ error: 'Falha no processamento do webhook' }, { status: 500 })
+  }
 }

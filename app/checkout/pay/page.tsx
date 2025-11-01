@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useCallback, useRef, useState } from 'react'
 import Script from 'next/script'
 import { useRouter, useSearchParams } from 'next/navigation'
 
@@ -29,49 +29,51 @@ export default function PayPage() {
     load()
   }, [orderId])
 
-  const initBricks = async () => {
-    if (!window.MercadoPago || !publicKey || !amount || loadedRef.current) return
-    loadedRef.current = true
-    const mp = new window.MercadoPago(publicKey, { locale: 'pt-BR' })
-    const bricksBuilder = mp.bricks()
-    await bricksBuilder.create('payment', containerId, {
-      initialization: { amount, payer: { email: '', entityType: 'individual' } },
-      customization: {
-        visual: { style: { theme: 'default' } },
-        // Exibir Pix (bankTransfer) e Cartão; valores: 'all' | false
-        paymentMethods: { bankTransfer: 'all', creditCard: 'all' },
-      },
-      callbacks: {
-        onReady: () => setReady(true),
-        onError: (error: any) => {
-          console.error('MP Brick error', error)
-          alert('Falha ao carregar o componente de pagamento. Verifique as credenciais e tente novamente.')
+  const initBricks = useCallback(async () => {
+      if (!window.MercadoPago || !publicKey || !amount || loadedRef.current) return
+      loadedRef.current = true
+      const mp = new window.MercadoPago(publicKey, { locale: 'pt-BR' })
+      const bricksBuilder = mp.bricks()
+      await bricksBuilder.create('payment', containerId, {
+        initialization: { amount, payer: { email: '', entityType: 'individual' } },
+        customization: {
+          visual: { style: { theme: 'default' } },
+          // Exibir Pix (bankTransfer) e Cartão; valores: 'all' | false
+          paymentMethods: { bankTransfer: 'all', creditCard: 'all' },
         },
-        onSubmit: async ({ formData }: any) => {
-          setPayError(null); setPayDetails(null)
-          const res = await fetch('/api/mp/pay', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderId, formData }) })
-          const json = await res.json().catch(()=>({}))
-          if (!res.ok || !json?.ok) {
-            setPayError(json?.error || 'Pagamento falhou')
-            setPayDetails(json?.details || null)
-            console.error('Pagamento 400:', json)
-            return
-          }
-          if (json?.pix) {
-            setPixData(json.pix)
-            return
-          }
-          // Card approved or pending
-          const status = String(json.status || '')
-          if (status === 'approved') router.push('/checkout/success')
-          else if (status === 'pending' || status === 'in_process') router.push('/checkout/pending')
-          else router.push('/checkout/failure')
+        callbacks: {
+          onReady: () => setReady(true),
+          onError: (error: any) => {
+            console.error('MP Brick error', error)
+            alert('Falha ao carregar o componente de pagamento. Verifique as credenciais e tente novamente.')
+          },
+          onSubmit: async (data: any) => {
+            // O objeto recebido é { formData }, então precisamos desestruturá-lo
+            const { formData } = data;
+            setPayError(null); setPayDetails(null)
+            const res = await fetch('/api/mp/pay', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderId, ...formData }) })
+            const json = await res.json().catch(()=>({}))
+            if (!res.ok || !json?.status) {
+              setPayError(json?.error || 'Pagamento falhou')
+              setPayDetails(json?.details || null)
+              console.error('Pagamento 400:', json)
+              return
+            }
+            if (json?.pix) { // Se a API retornar dados de PIX
+              setPixData(json.pix)
+              return
+            }
+            // Card approved or pending
+            const status = String(json.status || '')
+            if (status === 'approved') router.push(`/checkout/success?orderId=${orderId}`)
+            else if (status === 'in_process') router.push(`/checkout/pending?orderId=${orderId}`)
+            else router.push(`/checkout/failure?orderId=${orderId}`)
+          },
         },
-      },
-    })
-  }
+      })
+    }, [amount, orderId, publicKey, router])
 
-  useEffect(() => { initBricks() }, [amount])
+  useEffect(() => { initBricks() }, [amount, initBricks])
 
   return (
     <div className="container-custom py-10">
