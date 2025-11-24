@@ -95,14 +95,18 @@ function extractImages(p: any): { main?: string; list: string[] } {
   const push = (url?: string) => {
     if (url && typeof url === 'string' && url.trim()) imgs.push(url.trim())
   }
+  // campo principal de imagem
   push(p.imagem?.url)
+  push(p.imagem?.original)
+  push(p.imagem?.miniatura)
+  // campos de lista
   if (Array.isArray(p.imagens)) {
     p.imagens.forEach((i: any) => {
-      push(i?.url || i?.link)
+      push(i?.url || i?.link || i?.original || i?.miniatura)
     })
   }
   if (Array.isArray(p.imagens?.data)) {
-    p.imagens.data.forEach((i: any) => push(i?.url || i?.link))
+    p.imagens.data.forEach((i: any) => push(i?.url || i?.link || i?.original || i?.miniatura))
   }
   if (typeof p.imagemUrl === 'string') push(p.imagemUrl)
   const unique = Array.from(new Set(imgs))
@@ -150,7 +154,11 @@ export async function fetchBlingProductImages(id: string): Promise<string[]> {
     const res = await blingFetch(`/produtos/${id}/imagens`)
     if (!res.ok) return []
     const json: any = await res.json()
-    return Array.isArray(json?.data) ? json.data.map((i: any) => i.link) : []
+    return Array.isArray(json?.data)
+      ? json.data
+          .map((i: any) => i?.url || i?.link || i?.original || i?.miniatura)
+          .filter((s: any) => typeof s === 'string' && s.trim())
+      : []
   } catch {
     return []
   }
