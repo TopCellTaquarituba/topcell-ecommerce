@@ -117,12 +117,12 @@ export async function GET(req: NextRequest) {
           const brandSlug = slugify(mapped.brandName)
 
           const categoryData =
-            catSlug && mapped.categoryName
+            catSlug && (mapped.categoryName || catSlug)
               ? {
                   category: {
                     connectOrCreate: {
                       where: { slug: catSlug },
-                      create: { slug: catSlug, name: mapped.categoryName },
+                      create: { slug: catSlug, name: mapped.categoryName || catSlug },
                     },
                   },
                 }

@@ -99,6 +99,9 @@ function extractImages(p: any): { main?: string; list: string[] } {
   push(p.imagem?.url)
   push(p.imagem?.original)
   push(p.imagem?.miniatura)
+  // variações de chave simples
+  push(p.imagemUrl)
+  push(p.imagemURL)
   // campos de lista
   if (Array.isArray(p.imagens)) {
     p.imagens.forEach((i: any) => {
@@ -108,14 +111,18 @@ function extractImages(p: any): { main?: string; list: string[] } {
   if (Array.isArray(p.imagens?.data)) {
     p.imagens.data.forEach((i: any) => push(i?.url || i?.link || i?.original || i?.miniatura))
   }
-  if (typeof p.imagemUrl === 'string') push(p.imagemUrl)
   const unique = Array.from(new Set(imgs))
   return { main: unique[0], list: unique }
 }
 
 export function mapBlingProductToLocal(p: any) {
   const price = p.preco ?? p.precoVenda ?? p.valor ?? p.precoBase
-  const stock = p.estoque?.saldoFisicoTotal ?? p.estoque?.saldoDisponivel ?? p.estoqueAtual ?? p.saldo
+  const stock =
+    p.estoque?.saldoFisicoTotal ??
+    p.estoque?.saldoDisponivel ??
+    p.estoque?.saldoVirtualTotal ??
+    p.estoqueAtual ??
+    p.saldo
   const dim = p.dimensoes || p.dimensao || {}
   const peso = p.pesoBruto ?? p.pesoLiquido ?? p.peso ?? p.pesoLiq
   const imgs = extractImages(p)
@@ -125,8 +132,14 @@ export function mapBlingProductToLocal(p: any) {
   const categoryName =
     typeof cat === 'string'
       ? cat
-      : cat?.descricao || cat?.nome || (typeof cat?.descricaoCompleta === 'string' ? cat.descricaoCompleta : undefined)
-  const brandName = typeof brand === 'string' ? brand : brand?.descricao || brand?.nome
+      : cat?.descricao ||
+        cat?.nome ||
+        (typeof cat?.descricaoCompleta === 'string' ? cat.descricaoCompleta : undefined) ||
+        (cat?.id != null ? String(cat.id) : undefined)
+  const brandName =
+    typeof brand === 'string'
+      ? brand
+      : brand?.descricao || brand?.nome || (brand?.id != null ? String(brand.id) : undefined)
   return {
     externalId: String(p.id),
     name: p.nome,
