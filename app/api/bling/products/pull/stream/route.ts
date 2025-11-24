@@ -77,7 +77,18 @@ export async function GET(req: NextRequest) {
             continue
           }
 
-          const needDetail = !mapped.description || mapped.stockQty == null || !mapped.image || !mapped.brandName || !mapped.weightGrams || !mapped.lengthCm || !mapped.heightCm || !mapped.widthCm
+          const categoryIsNumeric = typeof mapped.categoryName === 'string' && /^[0-9]+$/.test(mapped.categoryName)
+          const needDetail =
+            !mapped.description ||
+            mapped.stockQty == null ||
+            !mapped.image ||
+            !mapped.brandName ||
+            categoryIsNumeric ||
+            !mapped.categoryName ||
+            !mapped.weightGrams ||
+            !mapped.lengthCm ||
+            !mapped.heightCm ||
+            !mapped.widthCm
           if (needDetail) {
             const det = await fetchBlingProductDetail(mapped.externalId)
             if (det) {
@@ -99,16 +110,18 @@ export async function GET(req: NextRequest) {
             }
           }
 
-          if (!mapped.image) {
+          if (!mapped.image || !mapped.images || mapped.images.length < 2) {
             const list = await fetchBlingProductImages(mapped.externalId)
             if (list.length) {
-              mapped.image = list[0]
-              mapped.images = list
+              mapped.image = mapped.image || list[0]
+              const merged = Array.from(new Set([...(mapped.images || []), ...list]))
+              mapped.images = merged
             } else {
               const fetched = await fetchBlingProductImage(mapped.externalId)
               if (fetched) {
-                mapped.image = fetched
-                mapped.images = [fetched]
+                mapped.image = mapped.image || fetched
+                const merged = Array.from(new Set([...(mapped.images || []), fetched]))
+                mapped.images = merged
               }
             }
           }

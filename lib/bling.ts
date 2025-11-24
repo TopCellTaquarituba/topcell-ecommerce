@@ -127,13 +127,16 @@ export function mapBlingProductToLocal(p: any) {
   const peso = p.pesoBruto ?? p.pesoLiquido ?? p.peso ?? p.pesoLiq
   const imgs = extractImages(p)
   const desc = cleanHtmlDescription(p.descricaoCurta || p.descricao || p.descricaoComplementar) || ''
-  const cat = p.categoria
+  const cat = p.categoria ?? (Array.isArray(p.categorias) ? p.categorias[0] : undefined)
   const brand = p.marca
   const categoryName =
     typeof cat === 'string'
       ? cat
       : cat?.descricao ||
         cat?.nome ||
+        cat?.descricaoCategoria ||
+        cat?.descricaoFamilia ||
+        cat?.descricaoCompleta ||
         (typeof cat?.descricaoCompleta === 'string' ? cat.descricaoCompleta : undefined) ||
         (cat?.id != null ? String(cat.id) : undefined)
   const brandName =
