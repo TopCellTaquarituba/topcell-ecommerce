@@ -1,13 +1,19 @@
 "use client"
-import { useEffect, useState } from 'react'
+
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 
 type TokenStatus = { connected: boolean; expiresAt?: string | null }
+type Progress = { current: number; total: number }
+type LogLine = { message: string; ts: string }
 
 export default function BlingIntegrationPage() {
   const [status, setStatus] = useState<TokenStatus>({ connected: false })
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+  const [progress, setProgress] = useState<Progress>({ current: 0, total: 0 })
+  const [logs, setLogs] = useState<LogLine[]>([])
+  const esRef = useRef<EventSource | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -21,19 +27,63 @@ export default function BlingIntegrationPage() {
       }
     }
     load()
+    return () => {
+      esRef.current?.close()
+    }
   }, [])
 
-  const importProducts = async () => {
-    setBusy(true); setMessage(null)
-    try {
-      const res = await fetch('/api/bling/products/pull', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ page: 1, limit: 100 }) })
-      const data = await res.json()
-      if (!res.ok || !data?.ok) throw new Error(data?.error || 'Falha ao importar')
-      setMessage(`Importados: ${data.imported}`)
-    } catch (e: any) {
-      setMessage(e?.message || 'Falha ao importar')
-    } finally { setBusy(false) }
+  const pushLog = (msg: string) => {
+    setLogs((prev) => [...prev, { message: msg, ts: new Date().toLocaleTimeString('pt-BR') }].slice(-200))
   }
+
+  const importProducts = () => {
+    if (!status.connected) return
+    setBusy(true)
+    setMessage(null)
+    setLogs([])
+    setProgress({ current: 0, total: 0 })
+
+    const es = new EventSource('/api/bling/products/pull/stream?limit=100&page=1')
+    esRef.current = es
+
+    es.addEventListener('log', (event: MessageEvent) => {
+      try {
+        const data = JSON.parse(event.data)
+        if (data?.message) pushLog(data.message)
+      } catch {}
+    })
+
+    es.addEventListener('progress', (event: MessageEvent) => {
+      try {
+        const data = JSON.parse(event.data)
+        setProgress({ current: data.current || 0, total: data.total || 0 })
+      } catch {}
+    })
+
+    es.addEventListener('done', (event: MessageEvent) => {
+      try {
+        const data = JSON.parse(event.data)
+        setMessage(`Importação finalizada. Produtos importados: ${data?.imported ?? 0}`)
+      } catch {
+        setMessage('Importação finalizada.')
+      }
+      setBusy(false)
+      es.close()
+    })
+
+    es.addEventListener('error', (event: MessageEvent) => {
+      try {
+        const data = JSON.parse((event as any).data || '{}')
+        setMessage(data?.error || 'Falha na importação.')
+      } catch {
+        setMessage('Falha na importação.')
+      }
+      setBusy(false)
+      es.close()
+    })
+  }
+
+  const pct = progress.total > 0 ? Math.min(100, Math.round((progress.current / progress.total) * 100)) : 0
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
@@ -56,11 +106,38 @@ export default function BlingIntegrationPage() {
           </div>
         </div>
         <div className="space-y-3">
-          <button disabled={!status.connected || busy} onClick={importProducts} className="px-4 py-2 bg-indigo-600 text-white rounded disabled:opacity-50">Importar Produtos</button>
+          <button
+            disabled={!status.connected || busy}
+            onClick={importProducts}
+            className="px-4 py-2 bg-indigo-600 text-white rounded disabled:opacity-50"
+          >
+            {busy ? 'Importando...' : 'Importar Produtos'}
+          </button>
+          {busy && (
+            <div className="space-y-2">
+              <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-indigo-600 transition-all duration-300"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+              <div className="text-xs text-gray-600 dark:text-gray-300">
+                {progress.total > 0 ? `${progress.current} / ${progress.total} (${pct}%)` : 'Preparando...'}
+              </div>
+            </div>
+          )}
+          <div className="bg-gray-900 text-gray-100 rounded-md p-3 h-48 overflow-auto font-mono text-xs border border-gray-800">
+            {logs.length === 0 && <div className="text-gray-500">Aguardando logs...</div>}
+            {logs.map((l, i) => (
+              <div key={i} className="whitespace-pre-wrap">
+                <span className="text-gray-500 mr-2">{l.ts}</span>
+                <span>{l.message}</span>
+              </div>
+            ))}
+          </div>
           {message && <div className="text-sm text-gray-700 dark:text-gray-300">{message}</div>}
         </div>
       </div>
     </div>
   )
 }
-
