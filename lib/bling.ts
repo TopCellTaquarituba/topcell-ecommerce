@@ -114,9 +114,10 @@ function extractImages(p: any): { main?: string; list: string[] } {
 }
 
 export function mapBlingProductToLocal(p: any) {
-  const price = p.preco
-  const stock = p.estoque?.saldoFisicoTotal
-  const dim = p.dimensoes
+  const price = p.preco ?? p.precoVenda ?? p.valor ?? p.precoBase
+  const stock = p.estoque?.saldoFisicoTotal ?? p.estoque?.saldoDisponivel ?? p.estoqueAtual ?? p.saldo
+  const dim = p.dimensoes || p.dimensao || {}
+  const peso = p.pesoBruto ?? p.pesoLiquido ?? p.peso ?? p.pesoLiq
   const imgs = extractImages(p)
   const desc = cleanHtmlDescription(p.descricaoCurta || p.descricao || p.descricaoComplementar)
   return {
@@ -129,10 +130,10 @@ export function mapBlingProductToLocal(p: any) {
     images: imgs.list,
     inStock: stock != null ? stock > 0 : undefined,
     stockQty: stock,
-    categoryName: p.categoria?.descricao,
-    brandName: p.marca,
-    weightGrams: p.pesoBruto ? p.pesoBruto * 1000 : undefined,
-    lengthCm: dim?.comprimento,
+    categoryName: p.categoria?.descricao || p.categoria?.nome || p.categoria,
+    brandName: p.marca?.descricao || p.marca?.nome || p.marca,
+    weightGrams: peso != null ? Number(peso) * 1000 : undefined,
+    lengthCm: dim?.comprimento ?? dim?.profundidade,
     widthCm: dim?.largura,
     heightCm: dim?.altura,
   }

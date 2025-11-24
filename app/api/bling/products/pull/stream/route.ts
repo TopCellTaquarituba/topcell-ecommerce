@@ -69,25 +69,30 @@ export async function GET(req: NextRequest) {
         let imported = 0
         for (let idx = 0; idx < items.length; idx++) {
           const p = items[idx]
-          const mapped = mapBlingProductToLocal(p)
+          let mapped = mapBlingProductToLocal(p)
           if (!mapped.externalId) {
             progress(idx + 1, total)
             continue
           }
 
-          const needDetail = !mapped.description || mapped.stockQty == null
+          const needDetail = !mapped.description || mapped.stockQty == null || !mapped.image || !mapped.brandName || !mapped.weightGrams || !mapped.lengthCm || !mapped.heightCm || !mapped.widthCm
           if (needDetail) {
             const det = await fetchBlingProductDetail(mapped.externalId)
             if (det) {
               const detMapped = mapBlingProductToLocal(det)
-              if (!mapped.description && detMapped.description) mapped.description = detMapped.description
-              if (mapped.stockQty == null && detMapped.stockQty != null) {
-                mapped.stockQty = detMapped.stockQty
-                mapped.inStock = Boolean(detMapped.stockQty > 0)
-              }
-              if (!mapped.image && detMapped.image) {
-                mapped.image = detMapped.image
-                mapped.images = [detMapped.image]
+              mapped = {
+                ...mapped,
+                description: mapped.description || detMapped.description,
+                stockQty: mapped.stockQty ?? detMapped.stockQty,
+                inStock: mapped.inStock ?? detMapped.inStock,
+                image: mapped.image || detMapped.image,
+                images: (mapped.images && mapped.images.length ? mapped.images : detMapped.images) || [],
+                brandName: mapped.brandName || detMapped.brandName,
+                categoryName: mapped.categoryName || detMapped.categoryName,
+                weightGrams: mapped.weightGrams ?? detMapped.weightGrams,
+                lengthCm: mapped.lengthCm ?? detMapped.lengthCm,
+                heightCm: mapped.heightCm ?? detMapped.heightCm,
+                widthCm: mapped.widthCm ?? detMapped.widthCm,
               }
             }
           }

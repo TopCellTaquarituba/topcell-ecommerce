@@ -101,7 +101,7 @@ npm run dev
 - `GET/POST /api/orders`, `GET/PUT /api/orders/[id]`
 - `POST /api/mp/pay`, `POST/GET /api/mp/webhook`
 - `GET/POST /api/categories` (name, slug, image, description)
-- `POST /api/bling/products/pull` (importação do ERP)
+- `GET /api/bling/products/pull/stream` (importação do ERP via SSE)
 
 ## Scripts
 - `npm run dev` – desenvolvimento
