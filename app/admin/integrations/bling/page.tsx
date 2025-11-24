@@ -106,12 +106,22 @@ export default function BlingIntegrationPage() {
           </div>
         </div>
         <div className="space-y-3">
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            Regra: sempre que alterar foto, descrição ou qualquer dado no Bling, clique em &ldquo;Atualizar Produtos&rdquo; para sincronizar aqui.
+          </p>
           <button
             disabled={!status.connected || busy}
             onClick={importProducts}
             className="px-4 py-2 bg-indigo-600 text-white rounded disabled:opacity-50"
           >
             {busy ? 'Importando...' : 'Importar Produtos'}
+          </button>
+          <button
+            disabled={!status.connected || busy}
+            onClick={importProducts}
+            className="px-4 py-2 bg-gray-200 text-gray-800 rounded disabled:opacity-50 dark:bg-gray-700 dark:text-white"
+          >
+            {busy ? 'Atualizando...' : 'Atualizar Produtos'}
           </button>
           {busy && (
             <div className="space-y-2">
