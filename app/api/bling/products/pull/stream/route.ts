@@ -93,6 +93,7 @@ export async function GET(req: NextRequest) {
             const det = await fetchBlingProductDetail(mapped.externalId)
             if (det) {
               const detMapped = mapBlingProductToLocal(det)
+              const categoryFromDetail = categoryIsNumeric ? detMapped.categoryName || mapped.categoryName : mapped.categoryName || detMapped.categoryName
               mapped = {
                 ...mapped,
                 description: mapped.description || detMapped.description,
@@ -101,7 +102,7 @@ export async function GET(req: NextRequest) {
                 image: mapped.image || detMapped.image,
                 images: (mapped.images && mapped.images.length ? mapped.images : detMapped.images) || [],
                 brandName: mapped.brandName || detMapped.brandName,
-                categoryName: mapped.categoryName || detMapped.categoryName,
+                categoryName: categoryFromDetail,
                 weightGrams: mapped.weightGrams ?? detMapped.weightGrams,
                 lengthCm: mapped.lengthCm ?? detMapped.lengthCm,
                 heightCm: mapped.heightCm ?? detMapped.heightCm,

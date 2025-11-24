@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-import { blingFetch, mapBlingProductToLocal } from '@/lib/bling'
+import { blingFetch, mapBlingProductToLocal, fetchBlingProductImages, fetchBlingProductImage } from '@/lib/bling'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -14,7 +14,20 @@ export async function GET(req: NextRequest) {
       const detailText = await detailRes.text()
       let detailJson: any = null
       try { detailJson = JSON.parse(detailText) } catch { /* keep raw */ }
-      const mapped = mapBlingProductToLocal(detailJson?.data || detailJson || {})
+      let mapped = mapBlingProductToLocal(detailJson?.data || detailJson || {})
+      if (!mapped.image || !mapped.images || mapped.images.length < 2) {
+        const list = await fetchBlingProductImages(mapped.externalId)
+        if (list.length) {
+          mapped.image = mapped.image || list[0]
+          mapped.images = Array.from(new Set([...(mapped.images || []), ...list]))
+        } else {
+          const single = await fetchBlingProductImage(mapped.externalId)
+          if (single) {
+            mapped.image = mapped.image || single
+            mapped.images = Array.from(new Set([...(mapped.images || []), single]))
+          }
+        }
+      }
       return NextResponse.json({
         ok: true,
         mode: 'detail',
