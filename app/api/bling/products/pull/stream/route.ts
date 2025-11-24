@@ -143,7 +143,7 @@ export async function GET(req: NextRequest) {
             where: { externalId: mapped.externalId },
             update: {
               name: mapped.name,
-              description: mapped.description,
+              description: mapped.description || '',
               price: new Prisma.Decimal(String(mapped.price || 0)),
               image: mapped.image || '',
               images: mapped.images || [],
@@ -158,7 +158,7 @@ export async function GET(req: NextRequest) {
             create: {
               externalId: mapped.externalId,
               name: mapped.name,
-              description: mapped.description,
+              description: mapped.description || '',
               price: new Prisma.Decimal(String(mapped.price || 0)),
               image: mapped.image || '',
               images: mapped.images || [],

@@ -119,7 +119,7 @@ export function mapBlingProductToLocal(p: any) {
   const dim = p.dimensoes || p.dimensao || {}
   const peso = p.pesoBruto ?? p.pesoLiquido ?? p.peso ?? p.pesoLiq
   const imgs = extractImages(p)
-  const desc = cleanHtmlDescription(p.descricaoCurta || p.descricao || p.descricaoComplementar)
+  const desc = cleanHtmlDescription(p.descricaoCurta || p.descricao || p.descricaoComplementar) || ''
   const cat = p.categoria
   const brand = p.marca
   const categoryName =
