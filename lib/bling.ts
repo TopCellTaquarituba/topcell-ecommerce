@@ -23,7 +23,7 @@ export async function getStoredToken() {
 
 export async function saveToken(data: { accessToken: string; refreshToken: string; expiresIn: number; scope: string }) {
   const prisma = await getPrisma()
-  const expiresAt = new Date(Date.now() + data.expiresIn * 1000000)
+  const expiresAt = new Date(Date.now() + data.expiresIn * 1000)
   await prisma.integrationToken.upsert({
     where: { provider: 'bling' },
     create: { provider: 'bling', accessToken: data.accessToken, refreshToken: data.refreshToken, expiresAt, scope: data.scope },
@@ -70,19 +70,59 @@ export async function blingFetch(path: string, opts: RequestInit = {}) {
   return fetch(url, { ...opts, headers })
 }
 
+function cleanHtmlDescription(raw?: string) {
+  if (!raw) return undefined
+  let text = raw
+  text = text.replace(/<(br|BR)\s*\/?>/g, '\n')
+  text = text.replace(/<\/(p|div|li|h[1-6])>/gi, '\n')
+  text = text.replace(/<(p|div|li|h[1-6])[^>]*>/gi, '')
+  text = text.replace(/<\/?(ul|ol)>/gi, '\n')
+  text = text.replace(/<[^>]+>/g, '')
+  text = text.replace(/&nbsp;/g, ' ')
+  text = text.replace(/&amp;/g, '&')
+  text = text.replace(/&lt;/g, '<')
+  text = text.replace(/&gt;/g, '>')
+  text = text
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .join('\n\n')
+  return text
+}
+
+function extractImages(p: any): { main?: string; list: string[] } {
+  const imgs: string[] = []
+  const push = (url?: string) => {
+    if (url && typeof url === 'string' && url.trim()) imgs.push(url.trim())
+  }
+  push(p.imagem?.url)
+  if (Array.isArray(p.imagens)) {
+    p.imagens.forEach((i: any) => {
+      push(i?.url || i?.link)
+    })
+  }
+  if (Array.isArray(p.imagens?.data)) {
+    p.imagens.data.forEach((i: any) => push(i?.url || i?.link))
+  }
+  if (typeof p.imagemUrl === 'string') push(p.imagemUrl)
+  const unique = Array.from(new Set(imgs))
+  return { main: unique[0], list: unique }
+}
+
 export function mapBlingProductToLocal(p: any) {
   const price = p.preco
   const stock = p.estoque?.saldoFisicoTotal
   const dim = p.dimensoes
-  const img = p.imagem?.url
+  const imgs = extractImages(p)
+  const desc = cleanHtmlDescription(p.descricaoCurta || p.descricao || p.descricaoComplementar)
   return {
     externalId: String(p.id),
     name: p.nome,
     sku: p.codigo,
     price,
-    description: p.descricaoCurta,
-    image: img,
-    images: img ? [img] : [],
+    description: desc,
+    image: imgs.main,
+    images: imgs.list,
     inStock: stock != null ? stock > 0 : undefined,
     stockQty: stock,
     categoryName: p.categoria?.descricao,
