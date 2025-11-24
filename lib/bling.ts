@@ -5,8 +5,9 @@ export function getBlingConfig() {
   const clientId = process.env.BLING_CLIENT_ID || ''
   const clientSecret = process.env.BLING_CLIENT_SECRET || ''
   const redirectUri = process.env.BLING_REDIRECT_URI || ''
-  const authUrl = 'https://www.bling.com.br/oauth/authorize'
-  const tokenUrl = 'https://www.bling.com.br/oauth/token'
+  // Endpoints corretos do OAuth v3 (com prefixo /Api/v3)
+  const authUrl = 'https://www.bling.com.br/Api/v3/oauth/authorize'
+  const tokenUrl = 'https://www.bling.com.br/Api/v3/oauth/token'
   const apiUrl = 'https://bling.com.br/Api/v3'
   if (!clientId || !clientSecret || !redirectUri) {
     throw new Error('Bling credentials missing')

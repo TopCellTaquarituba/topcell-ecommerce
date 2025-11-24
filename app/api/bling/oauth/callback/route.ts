@@ -67,7 +67,9 @@ export async function GET(req: NextRequest) {
     }
     await saveToken({ accessToken: json.access_token, refreshToken: json.refresh_token, expiresIn: json.expires_in, scope: json.scope })
 
-    const res = NextResponse.redirect('/admin/integrations/bling')
+    // NextResponse.redirect exige URL absoluta no middleware/app routes
+    const redirectUrl = new URL('/admin/integrations/bling', req.url)
+    const res = NextResponse.redirect(redirectUrl)
     res.cookies.set('bling_oauth_state', '', { path: '/', maxAge: 0 })
     return res
   } catch (e: any) {
