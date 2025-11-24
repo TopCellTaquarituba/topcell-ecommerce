@@ -23,7 +23,7 @@ export async function getStoredToken() {
 
 export async function saveToken(data: { accessToken: string; refreshToken: string; expiresIn: number; scope: string }) {
   const prisma = await getPrisma()
-  const expiresAt = new Date(Date.now() + data.expiresIn * 1000)
+  const expiresAt = new Date(Date.now() + data.expiresIn * 1000000)
   await prisma.integrationToken.upsert({
     where: { provider: 'bling' },
     create: { provider: 'bling', accessToken: data.accessToken, refreshToken: data.refreshToken, expiresAt, scope: data.scope },
