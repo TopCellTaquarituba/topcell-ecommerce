@@ -57,14 +57,16 @@ export async function GET(req: NextRequest) {
 
         log(`Produtos recebidos: ${total}`)
 
-        const slugify = (input?: string) =>
-          (input || '')
+        const slugify = (input?: string) => {
+          if (typeof input !== 'string' || !input.trim()) return undefined
+          return input
             .toString()
             .normalize('NFKD')
             .replace(/[\u0300-\u036f]/g, '')
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/(^-|-$)+/g, '')
+        }
 
         let imported = 0
         for (let idx = 0; idx < items.length; idx++) {
@@ -111,26 +113,31 @@ export async function GET(req: NextRequest) {
             }
           }
 
-          const categoryData = mapped.categoryName
-            ? {
-                category: {
-                  connectOrCreate: {
-                    where: { slug: slugify(mapped.categoryName) },
-                    create: { slug: slugify(mapped.categoryName), name: mapped.categoryName },
+          const catSlug = slugify(mapped.categoryName)
+          const brandSlug = slugify(mapped.brandName)
+
+          const categoryData =
+            catSlug && mapped.categoryName
+              ? {
+                  category: {
+                    connectOrCreate: {
+                      where: { slug: catSlug },
+                      create: { slug: catSlug, name: mapped.categoryName },
+                    },
                   },
-                },
-              }
-            : {}
-          const brandData = mapped.brandName
-            ? {
-                brand: {
-                  connectOrCreate: {
-                    where: { slug: slugify(mapped.brandName) },
-                    create: { slug: slugify(mapped.brandName), name: mapped.brandName },
+                }
+              : {}
+          const brandData =
+            brandSlug && mapped.brandName
+              ? {
+                  brand: {
+                    connectOrCreate: {
+                      where: { slug: brandSlug },
+                      create: { slug: brandSlug, name: mapped.brandName },
+                    },
                   },
-                },
-              }
-            : {}
+                }
+              : {}
 
           const product = await prisma.product.upsert({
             where: { externalId: mapped.externalId },

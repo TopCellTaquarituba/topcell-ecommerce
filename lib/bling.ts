@@ -120,6 +120,13 @@ export function mapBlingProductToLocal(p: any) {
   const peso = p.pesoBruto ?? p.pesoLiquido ?? p.peso ?? p.pesoLiq
   const imgs = extractImages(p)
   const desc = cleanHtmlDescription(p.descricaoCurta || p.descricao || p.descricaoComplementar)
+  const cat = p.categoria
+  const brand = p.marca
+  const categoryName =
+    typeof cat === 'string'
+      ? cat
+      : cat?.descricao || cat?.nome || (typeof cat?.descricaoCompleta === 'string' ? cat.descricaoCompleta : undefined)
+  const brandName = typeof brand === 'string' ? brand : brand?.descricao || brand?.nome
   return {
     externalId: String(p.id),
     name: p.nome,
@@ -130,8 +137,8 @@ export function mapBlingProductToLocal(p: any) {
     images: imgs.list,
     inStock: stock != null ? stock > 0 : undefined,
     stockQty: stock,
-    categoryName: p.categoria?.descricao || p.categoria?.nome || p.categoria,
-    brandName: p.marca?.descricao || p.marca?.nome || p.marca,
+    categoryName,
+    brandName,
     weightGrams: peso != null ? Number(peso) * 1000 : undefined,
     lengthCm: dim?.comprimento ?? dim?.profundidade,
     widthCm: dim?.largura,
