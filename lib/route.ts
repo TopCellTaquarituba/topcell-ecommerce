@@ -1,83 +1,112 @@
 import { NextResponse } from 'next/server'
-import Bling from 'bling-erp-api'
 import { getPrisma } from '@/lib/prisma'
 
+// Interface para ajudar o TypeScript a entender a estrutura do produto do ML
+interface MercadoLivreProduct {
+  id: string;
+  title: string;
+  price: number;
+  available_quantity: number;
+  seller_sku: string | null;
+  pictures: { url: string }[];
+  attributes: { id: string; value_name: string }[];
+  // Adicione outros campos que precisar
+}
+
 /**
- * Sincroniza produtos do Bling com o banco de dados local.
- * Pensada para ser chamada por um cron job.
+ * Sincroniza produtos do Mercado Livre com o banco de dados local.
  */
 export async function GET() {
-  const prisma = await getPrisma()
+  const prisma = getPrisma()
 
-  const blingApiKey = process.env.BLING_API_KEY
-  if (!blingApiKey) {
-    console.error('BLING_API_KEY não configurada')
-    return NextResponse.json({ error: 'Configuração do Bling ausente no servidor.' }, { status: 500 })
-  }
+  const mercadoLivreToken = process.env.MERCADO_LIVRE_ACCESS_TOKEN
+  const mercadoLivreUserId = process.env.MERCADO_LIVRE_USER_ID
 
-  const bling: any = new (Bling as any)(blingApiKey)
-  const produtosApi: any = bling.produtos
-  const limit = 100
-  let page = 1
-  const allProducts: any[] = []
-
-  const fetchPage = async (pageNum: number) => {
-    if (produtosApi?.getAll) return produtosApi.getAll({ page: pageNum, limit, filters: 'situacao[A]' })
-    if (produtosApi?.get) return produtosApi.get({ page: pageNum, limit, filters: 'situacao[A]' })
-    if (bling?.get) return bling.get('/produtos', { params: { page: pageNum, limit, filters: 'situacao[A]' } })
-    throw new Error('Método de produtos não disponível no cliente do Bling')
+  if (!mercadoLivreToken || !mercadoLivreUserId) {
+    const message = 'Credenciais do Mercado Livre não configuradas em .env (MERCADO_LIVRE_ACCESS_TOKEN, MERCADO_LIVRE_USER_ID)'
+    console.error(message)
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 
   try {
-    while (true) {
-      console.log(`Buscando produtos do Bling, página ${page}...`)
-      const response = await fetchPage(page)
-      const data = response?.data || []
-      if (!Array.isArray(data) || data.length === 0) break
-      allProducts.push(...data)
-      page++
+    // 1. Buscar os IDs de todos os produtos do usuário
+    console.log('Buscando IDs de produtos no Mercado Livre...')
+    const userProductsResponse = await fetch(`https://api.mercadolibre.com/users/${mercadoLivreUserId}/items/search`, {
+      headers: {
+        'Authorization': `Bearer ${mercadoLivreToken}`
+      }
+    })
+
+    if (!userProductsResponse.ok) {
+      throw new Error(`Erro ao buscar produtos do usuário: ${await userProductsResponse.text()}`)
     }
 
-    console.log(`Total de ${allProducts.length} produtos encontrados no Bling. Iniciando sincronização...`)
+    const userProductsData = await userProductsResponse.json()
+    const productIds: string[] = userProductsData.results || []
 
-    for (const blingProduct of allProducts) {
-      const produto = blingProduct?.produto || blingProduct
-      if (!produto) continue
+    if (productIds.length === 0) {
+      return NextResponse.json({ ok: true, message: 'Nenhum produto encontrado no Mercado Livre.' })
+    }
 
-      const images = Array.isArray(produto.imagem)
-        ? produto.imagem.map((img: any) => img?.link).filter(Boolean)
-        : []
-      if (produto.imagem?.link && !images.includes(produto.imagem.link)) {
-        images.unshift(produto.imagem.link)
+    // 2. Buscar os detalhes de cada produto (a API permite buscar em lotes de até 20)
+    console.log(`Encontrados ${productIds.length} IDs. Buscando detalhes...`)
+    const productsDetailsResponse = await fetch(`https://api.mercadolibre.com/items?ids=${productIds.join(',')}`, {
+      headers: {
+        'Authorization': `Bearer ${mercadoLivreToken}`
       }
+    })
+
+    if (!productsDetailsResponse.ok) {
+      throw new Error(`Erro ao buscar detalhes dos produtos: ${await productsDetailsResponse.text()}`)
+    }
+
+    const productsDetails: { body: MercadoLivreProduct }[] = await productsDetailsResponse.json()
+
+    // 3. Sincronizar com o banco de dados
+    let processedCount = 0
+    for (const item of productsDetails) {
+      const mlProduct = item.body
+
+      // O SKU é crucial. Se não houver, pulamos ou usamos o ID do ML como fallback.
+      const sku = mlProduct.seller_sku || mlProduct.id
+      if (!sku) continue;
+
+      const images = mlProduct.pictures?.map(p => p.url) || []
+      const brand = mlProduct.attributes?.find(attr => attr.id === 'BRAND')?.value_name
 
       const productData = {
-        name: produto.descricao,
-        sku: produto.codigo,
-        price: parseFloat(produto.preco ?? 0),
-        stock: produto.estoqueAtual ? Math.floor(produto.estoqueAtual) : 0,
-        description: produto.descricaoCurta || produto.descricao || '',
+        name: mlProduct.title,
+        sku: sku,
+        price: mlProduct.price,
+        stock: mlProduct.available_quantity,
+        description: mlProduct.title, // A descrição completa requer outra chamada de API
         image: images[0] || 'https://via.placeholder.com/500',
-        images,
-        brand: produto.marca,
-        category: produto.categoria?.descricao,
-        weight: parseFloat(produto.pesoBruto || 0),
-        height: parseFloat(produto.alturaProduto || 0),
-        width: parseFloat(produto.larguraProduto || 0),
-        length: parseFloat(produto.profundidadeProduto || 0),
+        images: images,
+        brand: brand || 'Marca não informada',
+        // Categoria e dimensões também podem ser extraídas se disponíveis
+        category: 'Categoria Padrão',
+        weight: 0,
+        height: 0,
+        width: 0,
+        length: 0,
       }
 
       await prisma.product.upsert({
-        where: { sku: produto.codigo },
+        where: { sku: productData.sku },
         update: productData,
         create: productData,
       })
+      processedCount++
     }
 
-    console.log(`Sincronização concluída com sucesso. ${allProducts.length} produtos processados.`)
-    return NextResponse.json({ ok: true, message: `Sincronização concluída. ${allProducts.length} produtos processados.` })
+    console.log(`Sincronização com Mercado Livre concluída. ${processedCount} produtos processados.`)
+    return NextResponse.json({
+      ok: true,
+      message: `Sincronização concluída. ${processedCount} produtos processados.`,
+    })
+
   } catch (error: any) {
-    console.error('Erro durante a sincronização com o Bling:', error)
-    return NextResponse.json({ error: `Falha na sincronização: ${error?.message || 'erro'}` }, { status: 500 })
+    console.error('Erro durante a sincronização com o Mercado Livre:', error)
+    return NextResponse.json({ error: `Falha na sincronização: ${error.message}` }, { status: 500 })
   }
 }
