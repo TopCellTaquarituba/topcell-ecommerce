@@ -14,7 +14,14 @@ export default function FavoritesPage() {
       if (!idsParam) { setProducts([]); return }
       const res = await fetch(`/api/products?ids=${encodeURIComponent(idsParam)}&limit=100`, { cache: 'no-store' })
       const json = await res.json().catch(()=>({}))
-      setProducts(json.items || [])
+      const mapped = (json.items || []).map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        price: Number(p.price),
+        image: p.image,
+        rating: p.rating || 0,
+      }))
+      setProducts(mapped)
     }
     load()
   }, [idsParam])

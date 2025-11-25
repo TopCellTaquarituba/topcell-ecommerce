@@ -16,6 +16,8 @@
   },
   "dependencies": {
     "@prisma/client": "^6.18.0",
+    "bling-erp-api": "^5.8.1",
+    "dompurify": "^3.3.0",
     "jquery": "^3.7.1",
     "jsonwebtoken": "^9.0.2",
     "mercadopago": "^2.9.0",
@@ -26,6 +28,7 @@
     "react-icons": "^4.12.0"
   },
   "devDependencies": {
+    "@types/dompurify": "^3.0.5",
     "@types/jsonwebtoken": "^9.0.6",
     "@types/node": "^20.10.6",
     "@types/react": "^18.2.46",

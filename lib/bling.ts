@@ -23,7 +23,9 @@ export async function getStoredToken() {
 
 export async function saveToken(data: { accessToken: string; refreshToken: string; expiresIn: number; scope: string }) {
   const prisma = await getPrisma()
-  const expiresAt = new Date(Date.now() + data.expiresIn * 1000)
+  // Define a data de expiração para 1 ano a partir de agora, ignorando o 'expiresIn' do Bling.
+  const expiresAt = new Date()
+  expiresAt.setFullYear(expiresAt.getFullYear() + 1)
   await prisma.integrationToken.upsert({
     where: { provider: 'bling' },
     create: { provider: 'bling', accessToken: data.accessToken, refreshToken: data.refreshToken, expiresAt, scope: data.scope },
@@ -134,11 +136,7 @@ export function mapBlingProductToLocal(p: any) {
       ? cat
       : cat?.descricao ||
         cat?.nome ||
-        cat?.descricaoCategoria ||
-        cat?.descricaoFamilia ||
-        cat?.descricaoCompleta ||
-        (typeof cat?.descricaoCompleta === 'string' ? cat.descricaoCompleta : undefined) ||
-        (cat?.id != null ? String(cat.id) : undefined)
+        cat?.descricaoCategoria
   const brandName =
     typeof brand === 'string'
       ? brand

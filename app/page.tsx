@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import ProductCard from '@/components/ProductCard'
 import HeroShowcase from '@/components/HeroShowcase'
-import CategoryCarousel from '@/components/CategoryCarousel'
 import AboutSectionDynamic from '@/components/AboutSectionDynamic'
 import FAQSection from '@/components/FAQSection'
 import MapSection from '@/components/MapSection'
@@ -18,7 +17,6 @@ function mapProduct(p: any) {
     name: p.name,
     price: Number(p.price),
     image: p.image,
-    category: p.category?.name || 'Categoria',
     rating: p.rating || 0,
   }
 }
@@ -97,9 +95,6 @@ export default async function HomePage({ searchParams }: HomeProps) {
                   href={href}
                   className={`relative overflow-hidden rounded-2xl p-5 shadow-sm border border-gray-100 hover:-translate-y-1 transition card-hover ${palette.bg}`}
                 >
-                  <span className={`text-xs font-semibold uppercase ${palette.text} bg-white/80 rounded-full px-3 py-1`}>
-                    {tile.category || 'Coleção'}
-                  </span>
                   <h3 className="text-xl font-bold mt-3 text-gray-900">{tile.name}</h3>
                   <p className="text-sm text-gray-600 mt-1">Confira novidades e lançamentos selecionados.</p>
                   <span className="absolute bottom-4 right-4 text-sm font-semibold text-gray-700">Ver mais →</span>
@@ -110,7 +105,6 @@ export default async function HomePage({ searchParams }: HomeProps) {
         </div>
       </section>
 
-      <CategoryCarousel />
       <AboutSectionDynamic />
 
       {featuredProducts.length > 0 && (

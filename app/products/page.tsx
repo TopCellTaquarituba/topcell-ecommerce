@@ -13,7 +13,6 @@ export default function ProductsPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [filters, setFilters] = useState<FilterState>({
-    categories: category ? [category] : [],
     brands: [],
     priceRange: [0, 10000],
     minRating: 0,
@@ -35,8 +34,6 @@ export default function ProductsPage() {
         name: p.name,
         price: Number(p.price),
         image: p.image,
-        category: p.category || '',
-        categorySlug: p.categorySlug || '',
         brand: p.brand || 'Outros',
         description: p.description || '',
         rating: p.rating || 0,
@@ -55,13 +52,6 @@ export default function ProductsPage() {
   // Apply filters
   const filteredProducts = useMemo(() => {
     let filtered = [...allProducts]
-
-    // Category filter
-    if (filters.categories.length > 0) {
-      filtered = filtered.filter(product => 
-        filters.categories.includes(product.category) || filters.categories.includes(product.categorySlug)
-      )
-    }
 
     // Brand filter
     if (filters.brands.length > 0) {
@@ -206,7 +196,6 @@ export default function ProductsPage() {
               </p>
               <button
                 onClick={() => setFilters({
-                  categories: [],
                   brands: [],
                   priceRange: [0, 10000],
                   minRating: 0,

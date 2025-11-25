@@ -1,6 +1,7 @@
 ﻿'use client'
 
 import { useState, useEffect } from 'react'
+import DOMPurify from 'dompurify'
 import { useParams, useRouter } from 'next/navigation'
 import type { Review } from '@/lib/products'
 import { useCart } from '@/context/CartContext'
@@ -28,17 +29,9 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState<any | null>(null)
   const { isFavorite, toggleFavorite } = useFavorites()
 
-  function sanitizeHtmlBasic(html: string) {
-    try {
-      let out = String(html || '')
-      out = out.replace(/<\s*(script|style)[^>]*>[\s\S]*?<\s*\/\1\s*>/gi, '')
-      out = out.replace(/ on[a-z]+\s*=\s*"[^"]*"/gi, '')
-      out = out.replace(/ on[a-z]+\s*=\s*'[^']*'/gi, '')
-      out = out.replace(/ on[a-z]+\s*=\s*[^\s>]+/gi, '')
-      out = out.replace(/href\s*=\s*"javascript:[^"]*"/gi, 'href="#"')
-      out = out.replace(/href\s*=\s*'javascript:[^']*'/gi, "href='#'")
-      return out
-    } catch { return String(html || '') }
+  function sanitizeHtml(html: string): string {
+    if (typeof window === 'undefined') return html || ''
+    return DOMPurify.sanitize(html || '')
   }
 
   useEffect(() => {
@@ -69,8 +62,7 @@ export default function ProductDetailPage() {
           price: Number(p.price),
           originalPrice: p.originalPrice != null ? Number(p.originalPrice) : undefined,
           image: p.image,
-          images: p.images || [p.image].filter(Boolean),
-          category: p.category || '',
+          images: Array.isArray(p.images) && p.images.length > 0 ? p.images : [p.image].filter(Boolean),
           rating: p.rating || 0,
           description: p.description || '',
           inStock: stockNum > 0,
@@ -255,7 +247,9 @@ export default function ProductDetailPage() {
           {/* Description & Characteristics */}
           <div className="mt-8">
             <h3 className="text-xl font-bold mb-3 dark:text-white">Descrição</h3>
-            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{product.description}</p>
+            <div
+              className="prose dark:prose-invert text-gray-700 dark:text-gray-300 leading-relaxed"
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.description) }} />
 
             <h3 className="text-xl font-bold mt-8 mb-3 dark:text-white">Características</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -273,10 +267,6 @@ export default function ProductDetailPage() {
         <aside className="lg:col-span-5">
           <div className="sticky top-24">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
-              {/* Category badge */}
-              <span className="inline-block px-3 py-1 bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200 text-xs rounded-full mb-3">
-                {product.category}
-              </span>
               {/* Price */}
               <div className="mb-4">
                 <div className="flex items-center gap-3">

@@ -12,7 +12,6 @@ interface ProductFiltersProps {
 }
 
 export interface FilterState {
-  categories: string[]
   brands: string[]
   priceRange: [number, number]
   minRating: number
@@ -21,7 +20,6 @@ export interface FilterState {
 }
 
 const initialFilters: FilterState = {
-  categories: [],
   brands: [],
   priceRange: [0, 10000],
   minRating: 0,
@@ -32,26 +30,14 @@ const initialFilters: FilterState = {
 export default function ProductFilters({ products, onFiltersChange, isOpen, onToggle }: ProductFiltersProps) {
   const [filters, setFilters] = useState<FilterState>(initialFilters)
   const [expandedSections, setExpandedSections] = useState({
-    categories: true,
     brands: true,
     price: true,
     rating: true
   })
 
   // Extract unique values for filters
-  const categories = Array.from(new Set(products.map(p => p.category)))
   const brands = Array.from(new Set(products.map(p => p.brand || 'Outros')))
-  const maxPrice = Math.max(...products.map(p => p.price))
-
-  const handleCategoryChange = (category: string) => {
-    const newCategories = filters.categories.includes(category)
-      ? filters.categories.filter(c => c !== category)
-      : [...filters.categories, category]
-    
-    const newFilters = { ...filters, categories: newCategories }
-    setFilters(newFilters)
-    onFiltersChange(newFilters)
-  }
+  const maxPrice = products.length ? Math.max(...products.map(p => p.price)) : 10000
 
   const handleBrandChange = (brand: string) => {
     const newBrands = filters.brands.includes(brand)
@@ -99,7 +85,7 @@ export default function ProductFilters({ products, onFiltersChange, isOpen, onTo
     }))
   }
 
-  const activeFiltersCount = filters.categories.length + filters.brands.length + 
+  const activeFiltersCount = filters.brands.length + 
     (filters.minRating > 0 ? 1 : 0) + (filters.priceRange[0] > 0 || filters.priceRange[1] < maxPrice ? 1 : 0)
 
   return (
@@ -190,38 +176,6 @@ export default function ProductFilters({ products, onFiltersChange, isOpen, onTo
               <option value="newest">Mais Recentes</option>
               <option value="name">Nome A-Z</option>
             </select>
-          </div>
-
-          {/* Categories */}
-          <div className="mb-6">
-            <button
-              onClick={() => toggleSection('categories')}
-              className="flex items-center justify-between w-full text-left font-semibold text-gray-700 dark:text-gray-300 mb-3"
-            >
-              <span>Categorias</span>
-              {expandedSections.categories ? (
-                <FiChevronUp className="w-5 h-5" />
-              ) : (
-                <FiChevronDown className="w-5 h-5" />
-              )}
-            </button>
-            {expandedSections.categories && (
-              <div className="space-y-2">
-                {categories.map((category) => (
-                  <label key={category} className="flex items-center space-x-3 cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      checked={filters.categories.includes(category)}
-                      onChange={() => handleCategoryChange(category)}
-                      className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                    />
-                    <span className="text-sm text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition">
-                      {category}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* Brands */}

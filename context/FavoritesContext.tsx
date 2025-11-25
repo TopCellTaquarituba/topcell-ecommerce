@@ -1,6 +1,7 @@
 "use client"
 
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 type FavoritesContextType = {
   favorites: string[]
@@ -8,6 +9,7 @@ type FavoritesContextType = {
   toggleFavorite: (id: string) => void
   addFavorite: (id: string) => void
   removeFavorite: (id: string) => void
+  isAuthenticated?: boolean
 }
 
 const FavoritesContext = createContext<FavoritesContextType | undefined>(undefined)
@@ -15,9 +17,11 @@ const FavoritesContext = createContext<FavoritesContextType | undefined>(undefin
 const LS_KEY_LEGACY = 'favorites_v1'
 
 export function FavoritesProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter()
   const [favorites, setFavorites] = useState<string[]>([])
   const [mounted, setMounted] = useState(false)
   const [customerId, setCustomerId] = useState<string | 'guest'>('guest')
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const storageKey = useMemo(() => `favorites_${customerId || 'guest'}`, [customerId])
   const prevKeyRef = useRef<string>(storageKey)
 
@@ -25,8 +29,15 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     fetch('/api/auth/me', { cache: 'no-store' })
       .then((r) => r.json())
-      .then((j) => setCustomerId(j?.authenticated && j?.customer?.id ? String(j.customer.id) : 'guest'))
-      .catch(() => setCustomerId('guest'))
+      .then((j) => {
+        const authed = !!(j?.authenticated && j?.customer?.id)
+        setIsAuthenticated(authed)
+        setCustomerId(authed ? String(j.customer.id) : 'guest')
+      })
+      .catch(() => {
+        setIsAuthenticated(false)
+        setCustomerId('guest')
+      })
       .finally(() => setMounted(true))
   }, [])
 
@@ -76,11 +87,29 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   }, [favorites, mounted, storageKey])
 
   const isFavorite = (id: string) => favorites.includes(String(id))
-  const addFavorite = (id: string) => setFavorites((s) => (s.includes(id) ? s : [...s, id]))
-  const removeFavorite = (id: string) => setFavorites((s) => s.filter((x) => x !== id))
-  const toggleFavorite = (id: string) => setFavorites((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))
 
-  const value = useMemo(() => ({ favorites, isFavorite, toggleFavorite, addFavorite, removeFavorite }), [favorites])
+  const ensureAuth = () => {
+    if (!mounted) return false
+    if (isAuthenticated) return true
+    alert('Entre na sua conta para salvar favoritos.')
+    router.push('/login?mode=login')
+    return false
+  }
+
+  const addFavorite = (id: string) => {
+    if (!ensureAuth()) return
+    setFavorites((s) => (s.includes(id) ? s : [...s, id]))
+  }
+  const removeFavorite = (id: string) => setFavorites((s) => s.filter((x) => x !== id))
+  const toggleFavorite = (id: string) => {
+    if (!ensureAuth()) return
+    setFavorites((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))
+  }
+
+  const value = useMemo(
+    () => ({ favorites, isFavorite, toggleFavorite, addFavorite, removeFavorite, isAuthenticated }),
+    [favorites, isAuthenticated]
+  )
 
   return <FavoritesContext.Provider value={value}>{children}</FavoritesContext.Provider>
 }

@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
 import { useCart } from '@/context/CartContext'
 import { useFavorites } from '@/context/FavoritesContext'
 import { FiShoppingCart, FiHeart } from 'react-icons/fi'
@@ -11,8 +10,7 @@ interface Product {
   name: string
   price: number
   image: string
-  category: string
-  rating: number
+  rating?: number
 }
 
 interface ProductCardProps {
@@ -22,6 +20,7 @@ interface ProductCardProps {
 export default function ProductCard({ product }: ProductCardProps) {
   const { addToCart } = useCart()
   const { isFavorite, toggleFavorite } = useFavorites()
+  const rating = Math.max(0, Math.min(5, Math.floor(product.rating || 0)))
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -53,7 +52,6 @@ export default function ProductCard({ product }: ProductCardProps) {
           </button>
         </div>
         <div className="p-4 flex-1 flex flex-col">
-          <span className="text-xs text-gray-500 dark:text-gray-400 uppercase">{product.category}</span>
           <h3 className="text-lg font-semibold mt-1 mb-2 line-clamp-2 dark:text-white">{product.name}</h3>
           <div className="flex items-center justify-between mt-auto">
             <span className="text-2xl font-bold text-primary-600 dark:text-primary-400">
@@ -64,7 +62,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                 <svg
                   key={i}
                   className={`w-4 h-4 ${
-                    i < Math.floor(product.rating)
+                    i < rating
                       ? 'text-yellow-400'
                       : 'text-gray-300 dark:text-gray-600'
                   }`}

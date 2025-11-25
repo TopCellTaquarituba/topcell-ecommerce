@@ -53,6 +53,15 @@ export default function Header() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchText, setSearchText] = useState('')
   const accountMenuRef = useRef<HTMLDivElement>(null)
+  const [categories, setCategories] = useState<{ id: string; name: string; slug: string }[]>([])
+  const [categoriesOpen, setCategoriesOpen] = useState(false)
+  const categoriesMenuRef = useRef<HTMLDivElement>(null)
+  const handleCategoryNavigate = (slug: string) => {
+    if (!slug) return
+    router.push(`/products?category=${encodeURIComponent(slug)}`)
+    setCategoriesOpen(false)
+    setIsMenuOpen(false)
+  }
 
   useEffect(() => {
     fetch('/api/auth/me', { cache: 'no-store' })
@@ -68,10 +77,27 @@ export default function Header() {
       if (accountMenuRef.current && !accountMenuRef.current.contains(event.target as Node)) {
         setAccountOpen(false)
       }
+      if (categoriesMenuRef.current && !categoriesMenuRef.current.contains(event.target as Node)) {
+        setCategoriesOpen(false)
+      }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [accountMenuRef])
+
+  useEffect(() => {
+    async function loadCategories() {
+      try {
+        const res = await fetch('/api/categories', { cache: 'no-store' })
+        const json = await res.json()
+        const items = Array.isArray(json?.items)
+          ? json.items.map((c: any) => ({ id: c.id, name: c.name, slug: c.slug }))
+          : []
+        setCategories(items)
+      } catch {}
+    }
+    loadCategories()
+  }, [])
 
   const handleSearchSubmit = (e?: FormEvent) => {
     e?.preventDefault()
@@ -84,9 +110,7 @@ export default function Header() {
 
   return (
     <header className="bg-white dark:bg-gray-900 shadow-lg sticky top-0 z-50 transition-colors duration-300 border-b border-gray-100">
-      <div className="hidden md:block bg-gradient-to-r from-pink-600 via-red-500 to-orange-500 text-white text-sm text-center py-2 px-4">
-        30% de desconto em todos os produtos - oferta especial de novembro!
-      </div>
+      
 
       <div className="hidden lg:block bg-gradient-to-r from-blue-50 via-purple-50 to-pink-50 text-xs text-gray-700 border-b border-gray-100">
         <div className="container-custom flex items-center justify-between py-3 gap-4">
@@ -99,15 +123,12 @@ export default function Header() {
               <FiMapPin className="w-4 h-4 text-primary-600" />
               Enviando para Brasil
             </span>
-            <span className="flex items-center gap-2">
-              <FiHelpCircle className="w-4 h-4 text-primary-600" />
-              Ajuda rápida
-            </span>
+            
           </div>
           <div className="flex items-center gap-4 text-primary-700">
             <span className="flex items-center gap-2 font-semibold">
               <FiPhoneCall className="w-4 h-4" />
-              280 900 3434
+              (14) 99622-8136
             </span>
             <div className="flex items-center gap-3 text-primary-600">
               <a href="https://facebook.com" className="hover:text-primary-800" aria-label="Facebook">
@@ -115,9 +136,6 @@ export default function Header() {
               </a>
               <a href="https://instagram.com" className="hover:text-primary-800" aria-label="Instagram">
                 <FiInstagram className="w-4 h-4" />
-              </a>
-              <a href="https://twitter.com" className="hover:text-primary-800" aria-label="Twitter">
-                <FiTwitter className="w-4 h-4" />
               </a>
             </div>
           </div>
@@ -166,21 +184,25 @@ export default function Header() {
               <FiPhoneCall className="w-5 h-5" />
               <div className="leading-tight">
                 <p className="text-xs font-semibold">Fale com a TopCell</p>
-                <p className="text-sm font-bold">+55 (11) 9999-0000</p>
+                <p className="text-sm font-bold">+55 (14) 99622-8136</p>
               </div>
             </div>
             <ThemeToggle />
-            <Link href="/favorites" className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition" aria-label="Favoritos">
+            <Link href="/favorites" className="hidden md:inline-flex p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition" aria-label="Favoritos">
               <FiHeart className="w-6 h-6 text-gray-700 dark:text-gray-300" />
             </Link>
-            <div className="relative" ref={accountMenuRef}>
+            <div className="relative hidden md:block" ref={accountMenuRef}>
               <button
                 onClick={() => setAccountOpen((v) => !v)}
                 className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition border border-transparent hover:border-gray-200 dark:hover:border-gray-700"
                 aria-label="Minha conta"
               >
                 <FiUser className="w-6 h-6 text-gray-700 dark:text-gray-300" />
-                {customerName && <span className="text-gray-700 dark:text-gray-200 text-sm max-w-[140px] truncate">{customerName}</span>}
+                {customerName && (
+                  <span className="text-gray-700 dark:text-gray-200 text-sm max-w-[140px] truncate">
+                    {customerName.split(' ')[0]}
+                  </span>
+                )}
               </button>
               {accountOpen && (
                 <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-20 animate-fade-in">
@@ -217,7 +239,7 @@ export default function Header() {
                 </div>
               )}
             </div>
-            <Link href="/cart" className="relative p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition">
+            <Link href="/cart" className="relative hidden md:inline-flex p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition">
               <FiShoppingCart className="w-6 h-6 text-gray-700 dark:text-gray-300" />
               {totalItems > 0 && (
                 <span className="absolute top-0 right-0 bg-primary-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center animate-scale-in">
@@ -232,13 +254,34 @@ export default function Header() {
         </div>
       </div>
 
-      <div className="border-t border-gray-100 dark:border-gray-800 bg-white/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur">
-        <div className="container-custom flex items-center gap-3 py-3 overflow-x-auto scrollbar-hide">
-          <button className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-primary-700 transition btn-animate whitespace-nowrap">
-            <FiMenu className="w-5 h-5" />
-            <span className="font-semibold">Categorias</span>
-          </button>
-          <nav className="flex items-center gap-4 text-sm font-semibold text-gray-700 dark:text-gray-200 whitespace-nowrap">
+      <div className="hidden md:block border-t border-gray-100 dark:border-gray-800 bg-white/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur">
+        <div className="container-custom flex items-center gap-3 py-3 overflow-x-auto scrollbar-hide relative">
+          <div ref={categoriesMenuRef}>
+            <button
+              onClick={() => setCategoriesOpen((v) => !v)}
+              className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-primary-700 transition btn-animate whitespace-nowrap"
+            >
+              <FiMenu className="w-5 h-5" />
+              <span className="font-semibold">Categorias</span>
+            </button>
+            {categoriesOpen && (
+              <div className="absolute mt-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-30 w-64 max-h-80 overflow-y-auto">
+                {categories.length === 0 && (
+                  <div className="px-4 py-3 text-sm text-gray-500">Nenhuma categoria cadastrada</div>
+                )}
+                {categories.map((c) => (
+                  <button
+                    key={c.id}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    onClick={() => handleCategoryNavigate(c.slug)}
+                  >
+                    {c.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <nav className="hidden md:flex items-center gap-4 text-sm font-semibold text-gray-700 dark:text-gray-200 whitespace-nowrap">
             <Link href="/" className="hover:text-primary-700 dark:hover:text-primary-300 transition">
               Início
             </Link>
@@ -263,6 +306,31 @@ export default function Header() {
 
       {isMenuOpen && (
         <div className="md:hidden pb-4 pt-2 px-4 animate-slide-down bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800">
+          <div className="mb-4">
+            <button
+              onClick={() => setCategoriesOpen((v) => !v)}
+              className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-primary-700 transition btn-animate whitespace-nowrap w-full justify-center"
+            >
+              <FiMenu className="w-5 h-5" />
+              <span className="font-semibold">Categorias</span>
+            </button>
+            {categoriesOpen && (
+              <div className="mt-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-30 w-full max-h-80 overflow-y-auto">
+                {categories.length === 0 && (
+                  <div className="px-4 py-3 text-sm text-gray-500">Nenhuma categoria cadastrada</div>
+                )}
+                {categories.map((c) => (
+                  <button
+                    key={c.id}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    onClick={() => handleCategoryNavigate(c.slug)}
+                  >
+                    {c.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <nav className="flex flex-col space-y-4">
             <Link href="/" className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition">
               Início
@@ -282,9 +350,14 @@ export default function Header() {
             <a href="/#about-section" className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition">
               Sobre Nós
             </a>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 text-gray-700 dark:text-gray-300">
               <ThemeToggle />
+              <span>Trocar tema</span>
             </div>
+            <Link href="/favorites" className="flex items-center space-x-2">
+              <FiHeart className="w-6 h-6" />
+              <span>Favoritos</span>
+            </Link>
             <Link href="/account" className="flex items-center space-x-2">
               <FiUser className="w-6 h-6" />
               <span>{customerName ? customerName : 'Minha conta'}</span>
