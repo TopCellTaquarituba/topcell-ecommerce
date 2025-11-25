@@ -17,7 +17,7 @@ interface MercadoLivreProduct {
  * Sincroniza produtos do Mercado Livre com o banco de dados local.
  */
 export async function GET() {
-  const prisma = getPrisma()
+  const prisma = await getPrisma()
 
   const mercadoLivreToken = process.env.MERCADO_LIVRE_ACCESS_TOKEN
   const mercadoLivreUserId = process.env.MERCADO_LIVRE_USER_ID
